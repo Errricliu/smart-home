@@ -1,91 +1,120 @@
 # Smart Home
 
-这是智能家居项目迁移到 Spring Boot 后的第一步：先让浏览器可以成功请求后端。
+智能家居项目（Spring Boot）。当前阶段实现了网页登录 / 登出 / 个人资料修改，目的是**边做功能边理解 Spring 的 IoC / DI 到底是怎么运作的**。
 
-## 当前目标
+## 已实现功能
 
-这一阶段只验证一件事：
-
-浏览器请求 -> Spring Boot 后端 -> 返回成功响应
-
-暂时不接入登录、用户、家具、日志、MySQL、MyBatis。这样做是为了先理解 Spring Boot Web 项目的最小结构，以及 Spring 容器如何把对象组织起来。
-
-## 当前目录职责
-
-`src/main/java/com/smarthome`
-
-项目的 Java 主包。Spring Boot 会从这里开始扫描组件。
-
-`src/main/java/com/smarthome/controller`
-
-Controller 层，负责接收浏览器或前端发来的 HTTP 请求，并返回 HTTP 响应。当前只有一个 `PingController`，用于确认后端可以正常被访问。
-
-`src/main/java/com/smarthome/service`
-
-Service 层，负责组织业务逻辑。当前只有一个 `SystemStatusService`，用于演示 Controller 如何通过构造方法依赖 Service。
-
-`src/main/java/com/smarthome/repository`
-
-Repository 层，负责提供数据。当前还没有连接数据库，只用 `SystemStatusRepository` 演示 Service 如何依赖数据来源。
-
-## 当前请求链路
-
-```text
-浏览器
-  -> PingController
-  -> SystemStatusService
-  -> SystemStatusRepository
-  -> 返回 JSON
-```
-
-这里的 `PingController`、`SystemStatusService`、`SystemStatusRepository` 都不是我们手动 `new` 出来的，而是 Spring 根据注解扫描后放进容器，再根据构造方法参数完成依赖注入。
-
-`src/main/resources`
-
-项目配置目录。当前只有 `application.properties`，以后会在这里配置端口、数据库连接等信息。
-
-`src/test/java/com/smarthome`
-
-测试代码目录。当前测试会确认 Spring Boot 能启动，并且 `/api/ping` 接口能返回成功。
+- 登录：输入账号密码，校验成功进入个人资料页
+- 登出：清除登录状态，回到登录页
+- 个人资料：登录后展示账号信息，可修改昵称 / 邮箱 / 简介并保存
+- 安全基础：密码用 BCrypt 哈希存储（不存明文）；登录状态用 token（Cookie + 内存缓存）保持
+- 演示账号：`admin` / `123456`（启动时自动创建）
 
 ## 运行方式
-
-如果你的电脑已经安装 Gradle，可以在项目根目录运行：
 
 ```bash
 gradle bootRun
 ```
 
-如果 Gradle 提示类似 `Failed to load native library 'libnative-platform.dylib'`，可以临时把 Gradle 缓存放到项目目录里运行：
+浏览器访问 http://localhost:8080/login
 
-```bash
-GRADLE_USER_HOME=.gradle-home gradle bootRun
+> 注意：本项目根目录的 `gradle.properties` 里关闭了校园代理
+> （`proxy-dku.oit.duke.edu:3128`），否则依赖下载会 403。若换了网络环境，
+> 可删除该文件里的 `systemProp.*proxy*` 配置。
+
+## 代码结构（按分层职责）
+
+```
+com.smarthome
+├── SmartHomeApplication  启动入口：Spring 从这里开始扫描组件
+├── model/User            用户实体（对应数据库 users 表）
+├── repository/           数据访问层
+│   ├── UserRepository    接口，方法由 Spring Data JPA 动态生成实现
+│   └── SystemStatusRepository
+├── service/              业务逻辑层
+│   ├── AuthService       登录/登出/会话缓存
+│   ├── UserService       注册/查看/修改资料
+│   └── SystemStatusService
+├── controller/           Web 层
+│   ├── AuthController    登录/登出页面
+│   ├── ProfileController 个人资料页
+│   └── PingController
+└── config/
+    ├── AppConfig         用 @Bean 手工声明 PasswordEncoder
+    └── DataInitializer   启动时造演示账号
 ```
 
-启动成功后，浏览器访问：
+## 核心：Spring 的 IoC / DI 是怎么实现的（对应你的理解）
+
+### 1. 容器从哪里看到"一整份类加载对象名单"？
+
+答案是**组件扫描（Component Scan）**。`SmartHomeApplication` 上的
+`@SpringBootApplication` 内部包含 `@ComponentScan`。应用启动时：
+
+1. 从启动类所在的包 `com.smarthome` 开始，向下递归扫描所有类；
+2. 用类加载器加载每个 `.class`，检查类上是否有 `@Component` /
+   `@Service` / `@Repository` / `@Controller` 等注解；
+3. 有注解的类被登记进一份"候选名单"（这些就是将来要管理的 bean）。
+
+所以"名单"不是凭空有的，而是**启动时靠注解扫描 + 类加载器**实时收集出来的。
+这正是你理解的"classloader 把注解挂在类加载对象上"的前半段来源。
+
+### 2. "一层一层，先从没有依赖的开始存" —— 依赖解析
+
+扫描拿到名单后，容器要逐个创建 bean。你的直觉是对的，真实机制是：
+
+- 创建某个 bean 时，如果它的**构造方法需要别的 bean**（依赖），
+  容器会**先递归去创建那个被依赖的 bean**；
+- 于是形成一条"依赖链"：被依赖的（没有依赖的）先创建，依赖它的后创建。
+
+以本项目为例，创建 `AuthController` 时：
 
 ```text
-http://localhost:8080/api/ping
+AuthController 需要 AuthService
+  -> AuthService 需要 UserRepository + PasswordEncoder
+       -> UserRepository：接口，由 Spring Data JPA 生成代理
+       -> PasswordEncoder：由 AppConfig 的 @Bean 方法 new 出来
 ```
 
-应该看到类似这样的返回：
+所以最终创建顺序是：`PasswordEncoder` → `UserRepository` → `AuthService` → `AuthController`。
+**没有依赖的先被创建，这正是你说的"分层存储"。**
 
-```json
-{
-  "success": true,
-  "message": "Smart Home backend is running",
-  "timestamp": "2026-08-04T00:00:00Z"
-}
-```
+### 3. 两种 DI 方式，本项目都用了
 
-## 测试方式
+- **注解方式**：`@Service` / `@Repository` / `@Controller` 标注的类，
+  靠扫描发现，靠**构造方法参数**注入依赖（这是最推荐、最直观的方式）。
+- **配置方式**：`PasswordEncoder` 来自第三方库，自己没贴注解，于是在
+  `AppConfig` 里用 `@Configuration` + `@Bean` 方法手工声明，交给容器管理。
+
+### 4. 一个关键点：接口怎么有实现？（动态代理）
+
+`UserRepository` 只是一个接口，一行实现代码都没写。运行时能调用
+`save` / `findByUsername`，是因为 **Spring Data JPA 在启动时用动态代理
+生成了这个接口的实现对象**，并注册进容器。这是 IoC 之上的一层"魔法"，
+但它仍然是"扫描 → 生成 → 注入"这条主线的一部分。
+
+### 5. 登录状态怎么"保持"？
+
+真实的 Web 是无状态的（HTTP 请求之间没有记忆）。本项目用最朴素的方式模拟：
+
+1. 登录成功 → 生成一个随机 `token`，放进内存 Map（token → username）；
+2. 把 token 写进浏览器的 Cookie；
+3. 之后每次请求，浏览器自动带上 Cookie，后端从 Cookie 取出 token，
+   反查 Map 得到当前用户。
+
+真实项目会把这份状态放到 Redis / Spring Session 里（可跨进程、可过期），
+但**核心思路完全一样**。这是下一步可以优化的方向。
+
+## 下一步可优化方向（由简到难）
+
+1. 会话过期：给 token 加有效期，到期自动失效
+2. 密码修改：个人页增加"修改密码"功能
+3. 用 MySQL 替换 H2（改依赖 + 配置即可，代码几乎不用动）
+4. 引入 Spring Security 处理更完整的认证 / 授权
+5. 会话状态外置到 Redis
+
+## 测试
 
 ```bash
 gradle test
-```
-
-如果普通 `gradle test` 遇到 Gradle 缓存问题，也可以使用：
-
-```bash
-GRADLE_USER_HOME=.gradle-home gradle test
 ```
