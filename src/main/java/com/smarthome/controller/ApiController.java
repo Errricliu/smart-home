@@ -188,6 +188,10 @@ public class ApiController {
 
     /**
      * GET /api/admin/users?token=xxx —— 管理员查看所有用户（普通用户调用会被拒绝）。
+     *
+     * <p>隐私保护：管理员看“别人”的手机号/邮箱/姓名时做脱敏，
+     * 只有看“自己”时才返回完整信息。这是真实系统里保护用户隐私的标准做法——
+     * 即便是管理员，也不该能看到用户的明文隐私数据。
      */
     @GetMapping("/admin/users")
     public ResponseEntity<Map<String, Object>> listAllUsers(@RequestParam(required = false) String token) {
@@ -198,13 +202,44 @@ public class ApiController {
         if (current.get().getRole() != Role.ADMIN) {
             return ok(false, "无权限：仅管理员可查看", null);
         }
+        Long selfId = current.get().getId();
         List<Map<String, Object>> users = new ArrayList<>();
         for (User u : userService.listAll()) {
-            users.add(toUserData(u));
+            Map<String, Object> ud = toUserData(u);
+            // 看别人时脱敏，看自己时保留完整
+            if (!u.getId().equals(selfId)) {
+                ud.put("phone", maskPhone(u.getPhone()));
+                ud.put("email", maskEmail(u.getEmail()));
+                ud.put("realName", maskName(u.getRealName()));
+            }
+            users.add(ud);
         }
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("users", users);
         return ok(true, "获取成功", data);
+    }
+
+    /** 手机号脱敏：138****8000 */
+    private String maskPhone(String phone) {
+        if (phone == null || phone.length() < 7) return phone;
+        return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
+    }
+
+    /** 邮箱脱敏：l***@example.com（保留首字符和域名） */
+    private String maskEmail(String email) {
+        if (email == null || !email.contains("@")) return email;
+        int at = email.indexOf('@');
+        String local = email.substring(0, at);
+        String domain = email.substring(at);
+        String head = local.length() > 1 ? local.substring(0, 1) : local;
+        return head + "***" + domain;
+    }
+
+    /** 姓名脱敏：张三 -> 张*；单个字则保留原样 */
+    private String maskName(String name) {
+        if (name == null || name.isEmpty()) return name;
+        if (name.length() == 1) return name;
+        return name.substring(0, 1) + "*".repeat(name.length() - 1);
     }
 
     // ---------- 工具方法 ----------

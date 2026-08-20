@@ -3,132 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智能家居控制中心</title>
+    <title>智家 - 智能家居控制中心</title>
     <style>
         :root {
-            --bg: #0f1720;
-            --panel: #1a2534;
-            --panel-2: #212f42;
+            --bg: #0b1220;
+            --panel: #141d2e;
+            --panel-2: #1c2940;
             --accent: #3b82f6;
             --accent-2: #10b981;
             --danger: #ef4444;
             --text: #e5edf6;
             --text-dim: #8aa0b8;
-            --border: #2c3c52;
+            --border: #24344d;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
         body {
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            background-image: radial-gradient(circle at 20% 20%, #16283c 0%, transparent 50%),
-                              radial-gradient(circle at 80% 80%, #12202f 0%, transparent 50%);
         }
-        .app {
-            width: 100%;
-            max-width: 920px;
-        }
+        a { cursor: pointer; }
 
-        /* 顶栏 */
-        .topbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
+        /* ===== 宣传首页 ===== */
+        .landing { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+        .navbar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 22px 0;
         }
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 20px;
-            font-weight: 700;
-        }
-        .brand .logo {
-            width: 34px; height: 34px;
+        .nav-brand { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; }
+        .nav-brand .logo {
+            width: 36px; height: 36px; border-radius: 10px;
             background: linear-gradient(135deg, var(--accent), var(--accent-2));
-            border-radius: 9px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px;
+            display: flex; align-items: center; justify-content: center; font-size: 20px;
         }
-        .topbar-right { display: flex; align-items: center; gap: 12px; }
+        .nav-links { display: flex; gap: 28px; align-items: center; }
+        .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 15px; transition: color .2s; }
+        .nav-links a:hover { color: var(--text); }
 
-        /* 标签导航 */
-        .tabs {
-            display: flex;
-            gap: 6px;
-            background: var(--panel);
-            padding: 6px;
-            border-radius: 12px;
-            margin-bottom: 20px;
+        .hero {
+            display: grid; grid-template-columns: 1.1fr 1fr; gap: 50px;
+            align-items: center; padding: 70px 0 90px;
         }
-        .tab {
-            flex: 1;
-            padding: 10px 0;
-            text-align: center;
-            border: none;
-            background: transparent;
-            color: var(--text-dim);
-            font-size: 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all .2s;
+        .hero h1 { font-size: 46px; line-height: 1.25; margin-bottom: 22px; font-weight: 800; }
+        .hero h1 .grad {
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
         }
-        .tab.active { background: var(--panel-2); color: var(--text); font-weight: 600; }
+        .hero p { color: var(--text-dim); font-size: 17px; line-height: 1.8; margin-bottom: 30px; max-width: 480px; }
+        .hero-actions { display: flex; gap: 14px; }
+        .hero-visual {
+            background: var(--panel); border: 1px solid var(--border); border-radius: 20px;
+            padding: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+        }
+        .hero-device {
+            background: var(--panel-2); border-radius: 14px; padding: 20px;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .hero-device .icon { font-size: 30px; }
+        .hero-device .name { font-weight: 600; }
+        .hero-device .state { font-size: 13px; color: var(--accent-2); }
 
-        .card {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 28px;
+        /* 特性区 */
+        .features { padding: 60px 0; }
+        .features h2 { text-align: center; font-size: 30px; margin-bottom: 14px; }
+        .features .sub { text-align: center; color: var(--text-dim); margin-bottom: 50px; }
+        .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+        .feature {
+            background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+            padding: 30px; transition: transform .2s, border .2s;
         }
+        .feature:hover { transform: translateY(-4px); border-color: var(--accent); }
+        .feature .icon { font-size: 34px; margin-bottom: 16px; }
+        .feature h3 { font-size: 18px; margin-bottom: 10px; }
+        .feature p { color: var(--text-dim); font-size: 14px; line-height: 1.7; }
 
-        /* 表单 */
-        .form-group { margin-bottom: 18px; }
-        .form-label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 7px; }
-        .form-input, .form-select {
-            width: 100%;
-            padding: 12px 14px;
-            background: var(--panel-2);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            color: var(--text);
-            font-size: 15px;
-            outline: none;
-            transition: border .2s;
-        }
-        .form-input:focus, .form-select:focus { border-color: var(--accent); }
-        .form-row { display: flex; gap: 14px; }
-        .form-row > div { flex: 1; }
+        /* 页脚 */
+        .footer { text-align: center; padding: 50px 0; color: var(--text-dim); font-size: 14px; border-top: 1px solid var(--border); margin-top: 40px; }
 
+        /* ===== 通用按钮 ===== */
         .btn {
-            padding: 12px 22px;
-            border: none;
-            border-radius: 10px;
-            font-size: 15px;
-            cursor: pointer;
-            transition: opacity .2s, transform .1s;
+            padding: 12px 24px; border: none; border-radius: 10px; font-size: 15px;
+            cursor: pointer; transition: opacity .2s, transform .1s;
         }
         .btn:active { transform: scale(.97); }
+        .btn:hover { opacity: .85; }
         .btn-primary { background: var(--accent); color: #fff; }
         .btn-success { background: var(--accent-2); color: #fff; }
         .btn-danger { background: var(--danger); color: #fff; }
         .btn-ghost { background: var(--panel-2); color: var(--text-dim); }
+        .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+        .btn-lg { padding: 15px 32px; font-size: 16px; }
         .btn-sm { padding: 7px 14px; font-size: 13px; }
-        .btn:hover { opacity: .85; }
 
+        /* ===== 登录/注册弹窗 ===== */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,.65);
+            justify-content: center; align-items: center; z-index: 100;
+        }
+        .modal {
+            background: var(--panel); border: 1px solid var(--border); border-radius: 18px;
+            width: 400px; max-width: 92vw; padding: 32px;
+        }
+        .modal-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+        .modal-sub { color: var(--text-dim); font-size: 13px; margin-bottom: 24px; }
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 7px; }
+        .form-input, .form-select {
+            width: 100%; padding: 12px 14px; background: var(--panel-2);
+            border: 1px solid var(--border); border-radius: 10px; color: var(--text);
+            font-size: 15px; outline: none; transition: border .2s;
+        }
+        .form-input:focus, .form-select:focus { border-color: var(--accent); }
+        .form-row { display: flex; gap: 14px; }
+        .form-row > div { flex: 1; }
         .error-tip { color: #f87171; font-size: 12px; margin-top: 5px; display: none; }
+        .modal-switch { text-align: center; margin-top: 14px; color: var(--text-dim); font-size: 14px; }
+        .modal-switch a { color: var(--accent); text-decoration: none; }
 
-        /* 登录/注册居中卡片 */
-        .auth-card { max-width: 430px; margin: 0 auto; }
-        .auth-title { text-align: center; font-size: 24px; font-weight: 700; margin-bottom: 26px; }
-        .auth-switch { text-align: center; margin-top: 16px; color: var(--text-dim); font-size: 14px; }
-        .auth-switch a { color: var(--accent); cursor: pointer; text-decoration: none; }
+        /* ===== 控制台（登录后）===== */
+        .dashboard { max-width: 920px; margin: 0 auto; padding: 24px; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .brand { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; }
+        .brand .logo {
+            width: 34px; height: 34px; border-radius: 9px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            display: flex; align-items: center; justify-content: center; font-size: 18px;
+        }
+        .topbar-right { display: flex; align-items: center; gap: 12px; }
+        .tabs { display: flex; gap: 6px; background: var(--panel); padding: 6px; border-radius: 12px; margin-bottom: 20px; }
+        .tab {
+            flex: 1; padding: 10px 0; text-align: center; border: none; background: transparent;
+            color: var(--text-dim); font-size: 15px; border-radius: 8px; cursor: pointer; transition: all .2s;
+        }
+        .tab.active { background: var(--panel-2); color: var(--text); font-weight: 600; }
+        .card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 28px; }
 
-        /* 资料展示 */
         .info-item {
             display: flex; justify-content: space-between; align-items: center;
             padding: 14px 0; border-bottom: 1px solid var(--border);
@@ -138,17 +147,10 @@
         .info-value { font-size: 15px; text-align: right; }
         .avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--panel-2); display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto 14px; }
 
-        /* 设备网格 */
         .device-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
         .device-card {
-            background: var(--panel-2);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 18px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            transition: border .2s;
+            background: var(--panel-2); border: 1px solid var(--border); border-radius: 14px;
+            padding: 18px; display: flex; flex-direction: column; gap: 10px; transition: border .2s;
         }
         .device-card.on { border-color: var(--accent-2); }
         .device-head { display: flex; justify-content: space-between; align-items: center; }
@@ -159,63 +161,133 @@
         .device-meta { font-size: 12px; color: var(--text-dim); }
         .device-actions { display: flex; gap: 6px; margin-top: auto; }
         .device-actions .btn { flex: 1; }
-
         .empty { text-align: center; color: var(--text-dim); padding: 40px 0; }
 
         .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; background: var(--panel-2); }
         .badge-admin { background: #7c3aed; color: #fff; }
 
-        /* 用户表格（管理员视图） */
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
         th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--border); }
         th { color: var(--text-dim); font-weight: 500; }
+
+        @media (max-width: 800px) {
+            .hero { grid-template-columns: 1fr; padding: 40px 0 60px; }
+            .hero h1 { font-size: 34px; }
+            .feature-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
-    <div class="app">
-        <!-- 登录页 -->
-        <div id="authView">
-            <div class="card auth-card">
-                <h2 class="auth-title" id="authTitle">登录智能家居系统</h2>
-                <!-- 登录表单 -->
-                <div id="loginForm">
-                    <div class="form-group">
-                        <label class="form-label">用户名</label>
-                        <input type="text" id="loginUid" class="form-input" placeholder="请输入用户名">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">密码</label>
-                        <input type="password" id="loginPwd" class="form-input" placeholder="请输入密码">
-                    </div>
-                    <div class="error-tip" id="loginErr"></div>
-                    <button class="btn btn-primary" id="loginBtn" style="width:100%;margin-top:8px;">登录</button>
-                    <div class="auth-switch">还没有账号？<a id="toRegister">立即注册</a></div>
+    <!-- ===== 宣传首页 ===== -->
+    <div id="landingView">
+        <div class="landing">
+            <nav class="navbar">
+                <div class="nav-brand"><span class="logo">🏠</span> 智家 SmartHome</div>
+                <div class="nav-links">
+                    <a>产品特性</a>
+                    <a>解决方案</a>
+                    <a>关于我们</a>
+                    <button class="btn btn-primary" id="navLoginBtn">登录</button>
+                    <button class="btn btn-outline" id="navRegisterBtn">免费注册</button>
                 </div>
-                <!-- 注册表单 -->
-                <div id="registerForm" style="display:none;">
-                    <div class="form-group">
-                        <label class="form-label">用户名（4-20位字母/数字/下划线）</label>
-                        <input type="text" id="regUid" class="form-input" placeholder="请输入用户名">
+            </nav>
+
+            <div class="hero">
+                <div>
+                    <h1>让每个家，<br>都<span class="grad">更懂你</span></h1>
+                    <p>智家提供全屋智能解决方案，一个平台统一管理灯光、空调、电视等所有设备。无论身在何处，随时随地掌控你的家。</p>
+                    <div class="hero-actions">
+                        <button class="btn btn-primary btn-lg" id="heroStartBtn">立即开始</button>
+                        <button class="btn btn-outline btn-lg" id="heroMoreBtn">了解更多</button>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">密码（6-32位）</label>
-                        <input type="password" id="regPwd" class="form-input" placeholder="请输入密码">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">手机号</label>
-                        <input type="text" id="regPhone" class="form-input" placeholder="11位手机号">
-                    </div>
-                    <div class="error-tip" id="regErr"></div>
-                    <button class="btn btn-success" id="regBtn" style="width:100%;margin-top:8px;">注册</button>
-                    <div class="auth-switch">已有账号？<a id="toLogin">返回登录</a></div>
+                </div>
+                <div class="hero-visual">
+                    <div class="hero-device"><span class="icon">💡</span><span class="name">客厅灯</span><span class="state">● 已开启</span></div>
+                    <div class="hero-device"><span class="icon">❄️</span><span class="name">卧室空调</span><span class="state">● 运行中</span></div>
+                    <div class="hero-device"><span class="icon">📺</span><span class="name">客厅电视</span><span class="state">○ 已关闭</span></div>
+                    <div class="hero-device"><span class="icon">🔊</span><span class="name">智能音箱</span><span class="state">● 播放中</span></div>
                 </div>
             </div>
         </div>
 
-        <!-- 主界面 -->
-        <div id="mainView" style="display:none;">
+        <div class="landing">
+            <div class="features">
+                <h2>核心能力</h2>
+                <div class="sub">一个平台，掌控全屋设备</div>
+                <div class="feature-grid">
+                    <div class="feature">
+                        <div class="icon">🔌</div>
+                        <h3>全屋设备管理</h3>
+                        <p>灯光、空调、电视、窗帘、音箱……所有设备一键添加，统一管理，随时开关。</p>
+                    </div>
+                    <div class="feature">
+                        <div class="icon">🔒</div>
+                        <h3>安全可靠</h3>
+                        <p>银行级密码加密、防暴力破解、账号归属隔离，隐私数据全程脱敏保护。</p>
+                    </div>
+                    <div class="feature">
+                        <div class="icon">📊</div>
+                        <h3>多用户协作</h3>
+                        <p>家庭成员各自拥有独立账号，管理员统一管理，权限清晰，数据互不干扰。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="landing">
+            <div class="footer">
+                © 2026 智家 SmartHome · 智能家居控制中心 · 让科技温暖每个家
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 登录/注册弹窗 ===== -->
+    <div class="modal-overlay" id="authModal">
+        <div class="modal">
+            <h3 class="modal-title" id="authTitle">登录智家</h3>
+            <div class="modal-sub" id="authSub">欢迎回来，请登录你的账号</div>
+
+            <!-- 登录表单 -->
+            <div id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">用户名</label>
+                    <input type="text" id="loginUid" class="form-input" placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">密码</label>
+                    <input type="password" id="loginPwd" class="form-input" placeholder="请输入密码">
+                </div>
+                <div class="error-tip" id="loginErr"></div>
+                <button class="btn btn-primary" id="loginBtn" style="width:100%;margin-top:8px;">登录</button>
+                <div class="modal-switch">还没有账号？<a id="toRegister">立即注册</a></div>
+            </div>
+
+            <!-- 注册表单 -->
+            <div id="registerForm" style="display:none;">
+                <div class="form-group">
+                    <label class="form-label">用户名（4-20位字母/数字/下划线）</label>
+                    <input type="text" id="regUid" class="form-input" placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">密码（6-32位）</label>
+                    <input type="password" id="regPwd" class="form-input" placeholder="请输入密码">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">手机号</label>
+                    <input type="text" id="regPhone" class="form-input" placeholder="11位手机号">
+                </div>
+                <div class="error-tip" id="regErr"></div>
+                <button class="btn btn-success" id="regBtn" style="width:100%;margin-top:8px;">注册</button>
+                <div class="modal-switch">已有账号？<a id="toLogin">返回登录</a></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 控制台（登录后）===== -->
+    <div id="dashboardView" style="display:none;">
+        <div class="dashboard">
             <div class="topbar">
-                <div class="brand"><span class="logo">🏠</span> 智能家居控制中心</div>
+                <div class="brand"><span class="logo">🏠</span> 智家控制中心</div>
                 <div class="topbar-right">
                     <span id="roleBadge" class="badge"></span>
                     <button class="btn btn-ghost btn-sm" id="logoutBtn">退出登录</button>
@@ -297,7 +369,7 @@
                 <h3 style="font-size:17px;margin-bottom:18px;">全平台用户</h3>
                 <div style="overflow-x:auto;">
                     <table>
-                        <thead><tr><th>ID</th><th>用户名</th><th>姓名</th><th>手机号</th><th>角色</th></tr></thead>
+                        <thead><tr><th>ID</th><th>用户名</th><th>姓名</th><th>手机号</th><th>邮箱</th><th>角色</th></tr></thead>
                         <tbody id="adminUserTable"></tbody>
                     </table>
                 </div>
@@ -306,7 +378,7 @@
     </div>
 
     <!-- 添加设备弹窗 -->
-    <div id="addDeviceModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);justify-content:center;align-items:center;">
+    <div id="addDeviceModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);justify-content:center;align-items:center;z-index:200;">
         <div class="card" style="width:380px;">
             <h3 style="margin-bottom:18px;">添加设备</h3>
             <div class="form-group">
@@ -338,7 +410,7 @@
         let currentRole = localStorage.getItem('role') || '';
         let isAdmin = currentRole === 'ADMIN';
 
-        // ===== 工具：请求封装 =====
+        // ===== 请求封装 =====
         async function api(path, method, body) {
             const opts = { method, headers: { 'Content-Type': 'application/json' } };
             if (body) opts.body = JSON.stringify(body);
@@ -346,85 +418,88 @@
             return res.json();
         }
 
-        // ===== 页面元素 =====
-        const authView = document.getElementById('authView');
-        const mainView = document.getElementById('mainView');
+        // ===== 视图切换 =====
+        const landingView = document.getElementById('landingView');
+        const authModal = document.getElementById('authModal');
+        const dashboardView = document.getElementById('dashboardView');
         const loginForm = document.getElementById('loginForm');
         const registerForm = document.getElementById('registerForm');
         const loginErr = document.getElementById('loginErr');
         const regErr = document.getElementById('regErr');
-        const deviceGrid = document.getElementById('deviceGrid');
-        const roleBadge = document.getElementById('roleBadge');
-        const adminTab = document.getElementById('adminTab');
-        const adminUserTable = document.getElementById('adminUserTable');
-        const addDeviceModal = document.getElementById('addDeviceModal');
 
-        // ===== 登录态恢复（关键：刷新不再掉登录）=====
+        function openLogin() {
+            authModal.style.display = 'flex';
+            loginForm.style.display = 'block';
+            registerForm.style.display = 'none';
+            document.getElementById('authTitle').textContent = '登录智家';
+            document.getElementById('authSub').textContent = '欢迎回来，请登录你的账号';
+            loginErr.style.display = 'none';
+        }
+        function openRegister() {
+            authModal.style.display = 'flex';
+            loginForm.style.display = 'none';
+            registerForm.style.display = 'block';
+            document.getElementById('authTitle').textContent = '注册智家账号';
+            document.getElementById('authSub').textContent = '创建账号，开启智能生活';
+            regErr.style.display = 'none';
+        }
+        function closeModal() { authModal.style.display = 'none'; }
+
+        // 点遮罩关闭弹窗
+        authModal.addEventListener('click', (e) => { if (e.target === authModal) closeModal(); });
+
+        // 首页各种登录/注册入口
+        document.getElementById('navLoginBtn').onclick = openLogin;
+        document.getElementById('navRegisterBtn').onclick = openRegister;
+        document.getElementById('heroStartBtn').onclick = openLogin;
+        document.getElementById('heroMoreBtn').onclick = () => document.querySelector('.features').scrollIntoView({ behavior: 'smooth' });
+        document.getElementById('toRegister').onclick = openRegister;
+        document.getElementById('toLogin').onclick = openLogin;
+
+        // ===== 登录态恢复（刷新不掉登录）=====
+        function showDashboard() {
+            landingView.style.display = 'none';
+            authModal.style.display = 'none';
+            dashboardView.style.display = 'block';
+            roleBadge.textContent = isAdmin ? '管理员' : '普通用户';
+            roleBadge.className = 'badge' + (isAdmin ? ' badge-admin' : '');
+            adminTab.style.display = isAdmin ? 'block' : 'none';
+        }
+        function showLanding() {
+            dashboardView.style.display = 'none';
+            landingView.style.display = 'block';
+        }
+        function logout() {
+            currentToken = ''; currentRole = ''; isAdmin = false;
+            localStorage.removeItem('token'); localStorage.removeItem('role');
+            showLanding();
+        }
         function restoreSession() {
-            if (!currentToken) return;
-            // 有 token 就尝试恢复，验证失败会自动登出
-            showMain();
+            if (!currentToken) { showLanding(); return; }
+            showDashboard();
             loadUserInfo();
             loadDevices();
             if (isAdmin) loadAdminUsers();
         }
 
-        function showMain() {
-            authView.style.display = 'none';
-            mainView.style.display = 'block';
-            roleBadge.textContent = isAdmin ? '管理员' : '普通用户';
-            roleBadge.className = 'badge' + (isAdmin ? ' badge-admin' : '');
-            adminTab.style.display = isAdmin ? 'block' : 'none';
-        }
-
-        function logout() {
-            currentToken = '';
-            currentRole = '';
-            isAdmin = false;
-            localStorage.removeItem('token');
-            localStorage.removeItem('role');
-            authView.style.display = 'block';
-            mainView.style.display = 'none';
-            loginForm.style.display = 'block';
-            registerForm.style.display = 'none';
-        }
-
         // ===== 认证 =====
-        document.getElementById('toRegister').onclick = () => {
-            loginForm.style.display = 'none';
-            registerForm.style.display = 'block';
-            loginErr.style.display = 'none';
-            document.getElementById('authTitle').textContent = '注册智能家居账号';
-        };
-        document.getElementById('toLogin').onclick = () => {
-            registerForm.style.display = 'none';
-            loginForm.style.display = 'block';
-            regErr.style.display = 'none';
-            document.getElementById('authTitle').textContent = '登录智能家居系统';
-        };
-
         document.getElementById('loginBtn').onclick = async () => {
             const username = document.getElementById('loginUid').value.trim();
             const password = document.getElementById('loginPwd').value.trim();
             if (!username || !password) {
-                loginErr.textContent = '用户名和密码不能为空';
-                loginErr.style.display = 'block';
-                return;
+                loginErr.textContent = '用户名和密码不能为空'; loginErr.style.display = 'block'; return;
             }
             const data = await api('/api/login', 'POST', { username, password });
             if (!data.success) {
-                loginErr.textContent = data.message;
-                loginErr.style.display = 'block';
-                return;
+                loginErr.textContent = data.message; loginErr.style.display = 'block'; return;
             }
             currentToken = data.data.token;
             currentRole = data.data.role;
             isAdmin = currentRole === 'ADMIN';
             localStorage.setItem('token', currentToken);
             localStorage.setItem('role', currentRole);
-            showMain();
-            loadUserInfo();
-            loadDevices();
+            showDashboard();
+            loadUserInfo(); loadDevices();
             if (isAdmin) loadAdminUsers();
             document.getElementById('loginPwd').value = '';
         };
@@ -435,26 +510,13 @@
             const phone = document.getElementById('regPhone').value.trim();
             const usernameReg = /^[a-zA-Z0-9_]{4,20}$/;
             const phoneReg = /^1[3-9]\d{9}$/;
-            if (!usernameReg.test(username)) {
-                regErr.textContent = '用户名需4-20位字母/数字/下划线';
-                regErr.style.display = 'block'; return;
-            }
-            if (password.length < 6 || password.length > 32) {
-                regErr.textContent = '密码长度需6-32位';
-                regErr.style.display = 'block'; return;
-            }
-            if (!phoneReg.test(phone)) {
-                regErr.textContent = '手机号格式不正确';
-                regErr.style.display = 'block'; return;
-            }
+            if (!usernameReg.test(username)) { regErr.textContent = '用户名需4-20位字母/数字/下划线'; regErr.style.display = 'block'; return; }
+            if (password.length < 6 || password.length > 32) { regErr.textContent = '密码长度需6-32位'; regErr.style.display = 'block'; return; }
+            if (!phoneReg.test(phone)) { regErr.textContent = '手机号格式不正确'; regErr.style.display = 'block'; return; }
             const data = await api('/api/register', 'POST', { username, password, phone });
-            if (!data.success) {
-                regErr.textContent = data.message;
-                regErr.style.display = 'block';
-                return;
-            }
+            if (!data.success) { regErr.textContent = data.message; regErr.style.display = 'block'; return; }
             alert('注册成功，请登录');
-            document.getElementById('toLogin').click();
+            openLogin();
             document.getElementById('regUid').value = '';
             document.getElementById('regPwd').value = '';
             document.getElementById('regPhone').value = '';
@@ -476,10 +538,7 @@
         // ===== 个人资料 =====
         async function loadUserInfo() {
             const data = await api(`/api/user?token=${currentToken}`, 'GET');
-            if (!data.success) {
-                if (data.message.includes('未登录')) logout();
-                return;
-            }
+            if (!data.success) { if (data.message.includes('未登录')) logout(); return; }
             const u = data.data;
             document.getElementById('showId').textContent = String(u.userId).padStart(6, '0');
             document.getElementById('showUsername').textContent = u.username || '';
@@ -489,10 +548,8 @@
             document.getElementById('showPhone').textContent = u.phone || '';
             document.getElementById('showEmail').textContent = u.email || '';
             document.getElementById('showBio').textContent = u.bio || '';
-            document.getElementById('avatarIcon').textContent = '👤';
             if (u.birthday) document.getElementById('birthDate').value = u.birthday;
         }
-
         function calcAge(birthday) {
             const b = new Date(birthday), n = new Date();
             let age = n.getFullYear() - b.getFullYear();
@@ -500,7 +557,6 @@
             if (m < 0 || (m === 0 && n.getDate() < b.getDate())) age--;
             return age;
         }
-
         document.getElementById('editBtn').onclick = () => {
             document.getElementById('editName').value = document.getElementById('showName').textContent;
             document.getElementById('editEmail').value = document.getElementById('showEmail').textContent;
@@ -523,12 +579,9 @@
             if (!emailReg.test(email)) { document.getElementById('emailError').style.display = 'block'; return; }
             if (!birthday || birthday > new Date().toISOString().split('T')[0]) { document.getElementById('birthError').style.display = 'block'; return; }
             const data = await api('/api/user', 'POST', {
-                token: currentToken,
-                realName,
+                token: currentToken, realName,
                 gender: document.getElementById('editGenderSelect').value,
-                birthday,
-                email,
-                bio: document.getElementById('editBio').value.trim()
+                birthday, email, bio: document.getElementById('editBio').value.trim()
             });
             if (!data.success) { alert(data.message); return; }
             await loadUserInfo();
@@ -539,25 +592,19 @@
 
         // ===== 设备管理 =====
         const typeIcons = { LIGHT: '💡', AC: '❄️', TV: '📺', CURTAIN: '🪟', SPEAKER: '🔊', SENSOR: '📡' };
-
+        const deviceGrid = document.getElementById('deviceGrid');
         async function loadDevices() {
             const data = await api(`/api/device/list?token=${currentToken}`, 'GET');
             if (!data.success) return;
             const devices = data.data.devices;
             deviceGrid.innerHTML = '';
-            if (devices.length === 0) {
-                deviceGrid.innerHTML = '<div class="empty">暂无设备，点击右上角「添加设备」开始</div>';
-                return;
-            }
+            if (devices.length === 0) { deviceGrid.innerHTML = '<div class="empty">暂无设备，点击右上角「添加设备」开始</div>'; return; }
             devices.forEach(d => {
                 const on = d.status === 'ON';
                 const card = document.createElement('div');
                 card.className = 'device-card' + (on ? ' on' : '');
                 card.innerHTML = `
-                    <div class="device-head">
-                        <span class="device-icon">${typeIcons[d.type] || '🔌'}</span>
-                        <span class="device-status-dot"></span>
-                    </div>
+                    <div class="device-head"><span class="device-icon">${typeIcons[d.type] || '🔌'}</span><span class="device-status-dot"></span></div>
                     <div class="device-name">${d.name}</div>
                     <div class="device-meta">${d.typeLabel} · ${d.statusLabel}</div>
                     ${d.battery != null ? `<div class="device-meta">电量 ${d.battery}%</div>` : ''}
@@ -568,7 +615,6 @@
                 deviceGrid.appendChild(card);
             });
         }
-
         window.toggleDevice = async (id) => {
             const data = await api('/api/device/toggle', 'POST', { token: currentToken, deviceId: id });
             if (!data.success) { alert(data.message); return; }
@@ -580,28 +626,24 @@
             if (!data.success) { alert(data.message); return; }
             loadDevices();
         };
-
-        document.getElementById('addDeviceBtn').onclick = () => {
-            addDeviceModal.style.display = 'flex';
-        };
-        document.getElementById('closeDeviceModal').onclick = () => {
-            addDeviceModal.style.display = 'none';
-        };
+        document.getElementById('addDeviceBtn').onclick = () => { document.getElementById('addDeviceModal').style.display = 'flex'; };
+        document.getElementById('closeDeviceModal').onclick = () => { document.getElementById('addDeviceModal').style.display = 'none'; };
         document.getElementById('confirmAddDevice').onclick = async () => {
             const name = document.getElementById('deviceName').value.trim();
             const type = document.getElementById('deviceType').value;
             if (!name) { document.getElementById('deviceErr').textContent = '设备名不能为空'; document.getElementById('deviceErr').style.display = 'block'; return; }
             const data = await api('/api/device/add', 'POST', { token: currentToken, name, type });
             if (!data.success) { document.getElementById('deviceErr').textContent = data.message; document.getElementById('deviceErr').style.display = 'block'; return; }
-            addDeviceModal.style.display = 'none';
+            document.getElementById('addDeviceModal').style.display = 'none';
             document.getElementById('deviceName').value = '';
             loadDevices();
         };
 
-        // ===== 管理员：用户列表 =====
+        // ===== 管理员用户列表 =====
         async function loadAdminUsers() {
             const data = await api(`/api/admin/users?token=${currentToken}`, 'GET');
             if (!data.success) { alert(data.message); return; }
+            const adminUserTable = document.getElementById('adminUserTable');
             adminUserTable.innerHTML = '';
             data.data.users.forEach(u => {
                 const tr = document.createElement('tr');
@@ -610,6 +652,7 @@
                     <td>${u.username}</td>
                     <td>${u.realName || '-'}</td>
                     <td>${u.phone || '-'}</td>
+                    <td>${u.email || '-'}</td>
                     <td>${u.role === 'ADMIN' ? '<span class="badge badge-admin">管理员</span>' : '普通用户'}</td>`;
                 adminUserTable.appendChild(tr);
             });
@@ -618,7 +661,7 @@
         // ===== 登出 =====
         document.getElementById('logoutBtn').onclick = logout;
 
-        // ===== 启动：优先恢复会话 =====
+        // ===== 启动 =====
         restoreSession();
     </script>
 </body>
