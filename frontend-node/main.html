@@ -446,10 +446,18 @@
         let isAdmin = currentRole === 'ADMIN';
 
         // ===== 请求封装 =====
+        // 统一带上 Authorization: Bearer <token>，后端 AuthInterceptor 据此鉴权。
+        // 收到 401（未登录/过期）时自动登出并回到登录页。
         async function api(path, method, body) {
-            const opts = { method, headers: { 'Content-Type': 'application/json' } };
+            const headers = { 'Content-Type': 'application/json' };
+            if (currentToken) headers['Authorization'] = 'Bearer ' + currentToken;
+            const opts = { method, headers };
             if (body) opts.body = JSON.stringify(body);
             const res = await fetch(path, opts);
+            if (res.status === 401) {
+                logout();
+                return { success: false, message: '未登录或登录已过期', data: null };
+            }
             return res.json();
         }
 
@@ -572,7 +580,7 @@
 
         // ===== 个人资料 =====
         async function loadUserInfo() {
-            const data = await api(`/api/user?token=${currentToken}`, 'GET');
+            const data = await api('/api/user', 'GET');
             if (!data.success) { if (data.message.includes('未登录')) logout(); return; }
             const u = data.data;
             document.getElementById('showId').textContent = String(u.userId).padStart(6, '0');
@@ -613,9 +621,13 @@
 
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('token', currentToken);
             try {
-                const res = await fetch('/api/user/avatar', { method: 'POST', body: formData });
+                const res = await fetch('/api/user/avatar', {
+                    method: 'POST',
+                    headers: currentToken ? { 'Authorization': 'Bearer ' + currentToken } : {},
+                    body: formData
+                });
+                if (res.status === 401) { logout(); return; }
                 const data = await res.json();
                 if (!data.success) {
                     alert(data.message);
@@ -659,7 +671,7 @@
             if (!emailReg.test(email)) { document.getElementById('emailError').style.display = 'block'; return; }
             if (!birthday || birthday > new Date().toISOString().split('T')[0]) { document.getElementById('birthError').style.display = 'block'; return; }
             const data = await api('/api/user', 'POST', {
-                token: currentToken, realName,
+                realName,
                 gender: document.getElementById('editGenderSelect').value,
                 birthday, email, bio: document.getElementById('editBio').value.trim()
             });
@@ -674,7 +686,7 @@
         const typeIcons = { LIGHT: '💡', AC: '❄️', TV: '📺', CURTAIN: '🪟', SPEAKER: '🔊', SENSOR: '📡' };
         const deviceGrid = document.getElementById('deviceGrid');
         async function loadDevices() {
-            const data = await api(`/api/device/list?token=${currentToken}`, 'GET');
+            const data = await api('/api/device/list', 'GET');
             if (!data.success) return;
             const devices = data.data.devices;
             deviceGrid.innerHTML = '';
@@ -696,13 +708,13 @@
             });
         }
         window.toggleDevice = async (id) => {
-            const data = await api('/api/device/toggle', 'POST', { token: currentToken, deviceId: id });
+            const data = await api('/api/device/toggle', 'POST', { deviceId: id });
             if (!data.success) { alert(data.message); return; }
             loadDevices();
         };
         window.deleteDevice = async (id) => {
             if (!confirm('确定删除该设备？')) return;
-            const data = await api('/api/device/delete', 'POST', { token: currentToken, deviceId: id });
+            const data = await api('/api/device/delete', 'POST', { deviceId: id });
             if (!data.success) { alert(data.message); return; }
             loadDevices();
         };
@@ -712,7 +724,7 @@
             const name = document.getElementById('deviceName').value.trim();
             const type = document.getElementById('deviceType').value;
             if (!name) { document.getElementById('deviceErr').textContent = '设备名不能为空'; document.getElementById('deviceErr').style.display = 'block'; return; }
-            const data = await api('/api/device/add', 'POST', { token: currentToken, name, type });
+            const data = await api('/api/device/add', 'POST', { name, type });
             if (!data.success) { document.getElementById('deviceErr').textContent = data.message; document.getElementById('deviceErr').style.display = 'block'; return; }
             document.getElementById('addDeviceModal').style.display = 'none';
             document.getElementById('deviceName').value = '';
@@ -721,7 +733,7 @@
 
         // ===== 管理员用户列表 =====
         async function loadAdminUsers() {
-            const data = await api(`/api/admin/users?token=${currentToken}`, 'GET');
+            const data = await api('/api/admin/users', 'GET');
             if (!data.success) { alert(data.message); return; }
             const adminUserTable = document.getElementById('adminUserTable');
             adminUserTable.innerHTML = '';

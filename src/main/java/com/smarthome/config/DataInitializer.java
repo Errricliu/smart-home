@@ -42,7 +42,9 @@ public class DataInitializer implements CommandLineRunner {
         if (admin == null) {
             // 第一次启动：注册 admin 账号，设为管理员，补全资料
             admin = userService.register("admin", "123456");
+            // 先持久化角色，再补资料（updateProfile 会重新查库，role 必须已落库）
             admin.setRole(Role.ADMIN);
+            userRepository.save(admin);
             userService.updateProfile(admin.getId(), new ProfileForm(
                     "管理员", "张三", Gender.MALE,
                     LocalDate.of(2000, 1, 1),
@@ -59,6 +61,16 @@ public class DataInitializer implements CommandLineRunner {
             deviceService.addDevice(admin.getId(), "客厅灯", Device.DeviceType.LIGHT);
             deviceService.addDevice(admin.getId(), "卧室空调", Device.DeviceType.AC);
             deviceService.addDevice(admin.getId(), "客厅电视", Device.DeviceType.TV);
+        }
+
+        // 创建一个普通用户演示账号，便于体验角色差异（管理员 vs 普通用户）
+        if (userRepository.findByUsername("demo_user").isEmpty()) {
+            User demo = userService.register("demo_user", "123456", "13912345678");
+            userService.updateProfile(demo.getId(), new ProfileForm(
+                    "李小明", "李小明", Gender.MALE,
+                    LocalDate.of(1998, 8, 20),
+                    "13912345678", "lixiaoming@example.com",
+                    "普通用户演示账号"));
         }
     }
 }

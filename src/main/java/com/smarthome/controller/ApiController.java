@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
+import com.smarthome.config.AuthInterceptor;
 import com.smarthome.dto.ProfileForm;
 import com.smarthome.exception.LoginLockedException;
 import com.smarthome.model.Gender;
@@ -21,6 +22,7 @@ import com.smarthome.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -118,25 +120,24 @@ public class ApiController {
 
     // ---------- 查询 / 修改个人资料 ----------
 
-    /** GET /api/user?token=xxx —— 返回当前登录用户的完整资料。 */
+    /**
+     * GET /api/user —— 返回当前登录用户的完整资料。
+     * 用户已由 AuthInterceptor 鉴权并注入，这里直接拿。
+     */
     @GetMapping("/user")
-    public ResponseEntity<Map<String, Object>> getUser(@RequestParam(required = false) String token) {
-        Optional<User> current = authService.currentUser(token);
-        if (current.isEmpty()) {
-            return ok(false, "未登录或登录已过期", null);
-        }
-        return ok(true, "获取成功", toUserData(current.get()));
+    public ResponseEntity<Map<String, Object>> getUser(
+            @RequestAttribute(AuthInterceptor.CURRENT_USER_ATTR) User user) {
+        return ok(true, "获取成功", toUserData(user));
     }
 
-    /** POST /api/user  body: {token, realName, gender, birthday, phone, email, bio} —— 修改资料。 */
+    /**
+     * POST /api/user  body: {realName, gender, birthday, phone, email, bio} —— 修改资料。
+     * token 不再放 body 里，改由拦截器从 Header 鉴权注入。
+     */
     @PostMapping("/user")
-    public ResponseEntity<Map<String, Object>> updateUser(@RequestBody Map<String, String> body) {
-        String token = body.get("token");
-        Optional<User> current = authService.currentUser(token);
-        if (current.isEmpty()) {
-            return ok(false, "未登录或登录已过期", null);
-        }
-        User user = current.get();
+    public ResponseEntity<Map<String, Object>> updateUser(
+            @RequestBody Map<String, String> body,
+            @RequestAttribute(AuthInterceptor.CURRENT_USER_ATTR) User user) {
 
         // 字段校验（与 ProfileForm 规则对齐；nickname 允许缺省，沿用原值）
         String realName = body.get("realName");
@@ -199,15 +200,12 @@ public class ApiController {
      * 即便是管理员，也不该能看到用户的明文隐私数据。
      */
     @GetMapping("/admin/users")
-    public ResponseEntity<Map<String, Object>> listAllUsers(@RequestParam(required = false) String token) {
-        Optional<User> current = authService.currentUser(token);
-        if (current.isEmpty()) {
-            return ok(false, "未登录或登录已过期", null);
-        }
-        if (current.get().getRole() != Role.ADMIN) {
+    public ResponseEntity<Map<String, Object>> listAllUsers(
+            @RequestAttribute(AuthInterceptor.CURRENT_USER_ATTR) User current) {
+        if (current.getRole() != Role.ADMIN) {
             return ok(false, "无权限：仅管理员可查看", null);
         }
-        Long selfId = current.get().getId();
+        Long selfId = current.getId();
         List<Map<String, Object>> users = new ArrayList<>();
         for (User u : userService.listAll()) {
             Map<String, Object> ud = toUserData(u);
@@ -250,18 +248,14 @@ public class ApiController {
     // ---------- 头像上传 ----------
 
     /**
-     * POST /api/user/avatar  multipart/form-data: {file, token}
+     * POST /api/user/avatar  multipart/form-data: {file}
      * 上传头像：校验图片类型和大小 -> 落盘 -> 记录文件名 -> 返回头像 URL。
+     * 用户由拦截器从 Header 鉴权注入。
      */
     @PostMapping("/user/avatar")
     public ResponseEntity<Map<String, Object>> uploadAvatar(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("token") String token) {
-        Optional<User> current = authService.currentUser(token);
-        if (current.isEmpty()) {
-            return ok(false, "未登录或登录已过期", null);
-        }
-        User user = current.get();
+            @RequestAttribute(AuthInterceptor.CURRENT_USER_ATTR) User user) {
         try {
             String filename = fileStorageService.saveAvatar(user.getId(), file);
             // 换头像：先删旧文件，再更新记录

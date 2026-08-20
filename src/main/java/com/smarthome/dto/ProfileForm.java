@@ -3,7 +3,6 @@ package com.smarthome.dto;
 import java.time.LocalDate;
 
 import com.smarthome.model.Gender;
-import com.smarthome.model.User;
 
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -66,18 +65,6 @@ public class ProfileForm {
         this.phone = phone;
         this.email = email;
         this.bio = bio;
-    }
-
-    /** 从 User 实体构造表单（编辑页回显已有数据用）。 */
-    public static ProfileForm from(User user) {
-        return new ProfileForm(
-                user.getNickname(),
-                user.getRealName(),
-                user.getGender(),
-                user.getBirthday(),
-                user.getPhone(),
-                user.getEmail(),
-                user.getBio());
     }
 
     public String getNickname() {

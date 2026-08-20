@@ -22,6 +22,8 @@
 
 - **宣传首页**：导航栏 + 产品介绍 + 功能特性 + 登录/注册弹窗
 - **登录/登出**：token 存 localStorage，刷新不掉登录态
+- **会话过期**：30 分钟无操作自动失效（滑动过期），前端收到 401 自动跳登录
+- **统一鉴权拦截器**：AuthInterceptor 拦截所有 /api/**，从 `Authorization: Bearer <token>` 取 token，未登录返回 401
 - **防暴力破解**：连续错 5 次锁 5 分钟 + 防账号枚举（时间差抹平）
 - **注册**：账号/密码/手机号校验 + 用户名、手机号查重
 - **角色权限**：普通用户(USER) / 管理员(ADMIN)，管理员可看全平台用户和设备
@@ -99,15 +101,17 @@ com.smarthome
 │   ├── UserService        注册/改资料/姓名查重
 │   ├── DeviceService      设备增删改查 + 归属校验
 │   └── FileStorageService 头像存储
-├── controller/            Web 层
-│   ├── ApiController      JSON API（登录/注册/资料/管理员）
-│   └── DeviceController   JSON API（设备）
+├── controller/            Web 层（纯 JSON API，无服务端模板）
+│   ├── ApiController      登录/注册/资料/头像/管理员
+│   ├── DeviceController   设备增删改查/开关
+│   └── PingController     健康检查
 ├── exception/             自定义异常
 │   └── LoginLockedException
 └── config/
     ├── AppConfig          @Bean 声明 PasswordEncoder
+    ├── AuthInterceptor    登录拦截器（统一鉴权，AOP 思想）
     ├── DataInitializer    启动初始化演示账号/设备
-    ├── WebConfig          静态资源映射
+    ├── WebConfig          注册拦截器 + 静态资源映射
     └── GlobalExceptionHandler 全局异常（返回 JSON）
 ```
 
@@ -139,19 +143,20 @@ ApiController 需要 AuthService + UserService + FileStorageService
 
 `UserRepository`/`DeviceRepository` 只是接口，运行时能调用是因为 **Spring Data JPA 用动态代理生成了实现**并注册进容器。
 
-### 5. 登录状态怎么保持？
+### 5. 登录状态怎么保持 + 拦截器鉴权（AOP）
 
-1. 登录成功 → 生成 token 存内存 Map（token → username）
-2. 前端把 token 存 localStorage
-3. 之后每次请求带 token，后端反查得到当前用户
+1. 登录成功 → 生成 token 存内存 Map（token → 会话对象，含过期时间）
+2. 前端把 token 存 localStorage，之后每次请求带 `Authorization: Bearer <token>` 头
+3. **AuthInterceptor** 拦截所有 `/api/**`，统一从 Header 取 token 鉴权，把用户塞进 request
+4. Controller 通过 `@RequestAttribute` 直接拿用户，不再重复写鉴权代码
 
-真实项目会外置到 Redis/Session，但核心思路一样。
+这就是 **AOP（面向切面编程）**：把「鉴权」这个横切所有接口的通用逻辑，从每个方法里抽出来放到拦截器统一处理，Controller 只写业务。会话过期用「滑动过期」——30 分钟内有过操作就续期，长时间不操作才失效。
 
 ## 下一步可优化方向
 
-1. 会话过期：token 加有效期
+1. 会话外置 Redis（当前存内存，重启即丢）
 2. 密码修改功能
-3. 引入 Spring Security 做完整认证/授权
-4. 会话外置 Redis
-5. 设备电量/运行状态详情、场景联动
-6. HTTPS + 域名部署
+3. 引入 Spring Security 做完整认证/授权（RBAC）
+4. 设备电量/运行状态详情、场景联动
+5. HTTPS + 域名部署
+6. 接口文档（Swagger/OpenAPI）
