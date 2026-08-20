@@ -1,0 +1,27 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-server
+    environment:
+      # root 账号密码（与 application.properties 中的连接配置保持一致）
+      MYSQL_ROOT_PASSWORD: "123456"
+      # 容器首次创建时自动建库
+      MYSQL_DATABASE: "smart_home"
+      TZ: "Asia/Shanghai"
+    ports:
+      # 宿主机 3306 -> 容器 3306
+      - "3306:3306"
+    volumes:
+      # 具名卷：数据持久化，容器删除后数据不丢
+      - mysql-data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p123456"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  mysql-data:

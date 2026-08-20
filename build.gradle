@@ -34,9 +34,12 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-data-jpa"
     // 密码哈希：只引入 BCrypt，不引入整套 Security 的过滤链
     implementation "org.springframework.security:spring-security-crypto"
-    runtimeOnly "com.h2database:h2"
+    // MySQL 驱动：运行时连 Docker 里的 MySQL（见 docker-compose.yml）
+    runtimeOnly "com.mysql:mysql-connector-j"
 
     testImplementation "org.springframework.boot:spring-boot-starter-test"
+    // H2 仅用于单元测试（src/test/resources 中覆盖为内存库，测试不依赖 MySQL）
+    testRuntimeOnly "com.h2database:h2"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
