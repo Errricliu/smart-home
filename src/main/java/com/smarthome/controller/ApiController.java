@@ -2,7 +2,9 @@ package com.smarthome.controller;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -10,6 +12,7 @@ import java.util.regex.Pattern;
 import com.smarthome.dto.ProfileForm;
 import com.smarthome.exception.LoginLockedException;
 import com.smarthome.model.Gender;
+import com.smarthome.model.Role;
 import com.smarthome.model.User;
 import com.smarthome.service.AuthService;
 import com.smarthome.service.UserService;
@@ -75,7 +78,10 @@ public class ApiController {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("token", token.get());
         data.put("username", username.trim());
-        authService.currentUser(token.get()).ifPresent(u -> data.put("userId", u.getId()));
+        authService.currentUser(token.get()).ifPresent(u -> {
+            data.put("userId", u.getId());
+            data.put("role", u.getRole().name());
+        });
         return ok(true, "登录成功", data);
     }
 
@@ -169,8 +175,36 @@ public class ApiController {
         form.setEmail(email);
         form.setBio(body.get("bio"));
 
-        User updated = userService.updateProfile(user.getId(), form);
-        return ok(true, "资料修改成功", toUserData(updated));
+        try {
+            User updated = userService.updateProfile(user.getId(), form);
+            return ok(true, "资料修改成功", toUserData(updated));
+        } catch (IllegalArgumentException e) {
+            // 例如“该姓名已被使用”，属于业务校验失败，返回给前端展示
+            return ok(false, e.getMessage(), null);
+        }
+    }
+
+    // ---------- 管理员接口 ----------
+
+    /**
+     * GET /api/admin/users?token=xxx —— 管理员查看所有用户（普通用户调用会被拒绝）。
+     */
+    @GetMapping("/admin/users")
+    public ResponseEntity<Map<String, Object>> listAllUsers(@RequestParam(required = false) String token) {
+        Optional<User> current = authService.currentUser(token);
+        if (current.isEmpty()) {
+            return ok(false, "未登录或登录已过期", null);
+        }
+        if (current.get().getRole() != Role.ADMIN) {
+            return ok(false, "无权限：仅管理员可查看", null);
+        }
+        List<Map<String, Object>> users = new ArrayList<>();
+        for (User u : userService.listAll()) {
+            users.add(toUserData(u));
+        }
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("users", users);
+        return ok(true, "获取成功", data);
     }
 
     // ---------- 工具方法 ----------
@@ -188,6 +222,7 @@ public class ApiController {
         data.put("phone", user.getPhone());
         data.put("email", user.getEmail());
         data.put("bio", user.getBio());
+        data.put("role", user.getRole() == null ? "USER" : user.getRole().name());
         return data;
     }
 

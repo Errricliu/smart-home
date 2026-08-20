@@ -1,5 +1,6 @@
 package com.smarthome.service;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.smarthome.dto.ProfileForm;
@@ -91,6 +92,13 @@ public class UserService {
     public User updateProfile(Long id, ProfileForm form) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("用户不存在: " + id));
+
+        // 名字唯一校验：改成别人已经在用的名字，直接拒绝
+        if (form.getRealName() != null && !form.getRealName().equals(user.getRealName())
+                && userRepository.existsByRealName(form.getRealName())) {
+            throw new IllegalArgumentException("该姓名已被使用，请换一个");
+        }
+
         user.setNickname(form.getNickname());
         user.setRealName(form.getRealName());
         user.setGender(form.getGender());
@@ -99,5 +107,10 @@ public class UserService {
         user.setEmail(form.getEmail());
         user.setBio(form.getBio());
         return user;
+    }
+
+    /** 查询所有用户（管理员用）。 */
+    public List<User> listAll() {
+        return userRepository.findAll();
     }
 }

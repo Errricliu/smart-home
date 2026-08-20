@@ -1,537 +1,625 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile System</title>
+    <title>智能家居控制中心</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: sans-serif;
+        :root {
+            --bg: #0f1720;
+            --panel: #1a2534;
+            --panel-2: #212f42;
+            --accent: #3b82f6;
+            --accent-2: #10b981;
+            --danger: #ef4444;
+            --text: #e5edf6;
+            --text-dim: #8aa0b8;
+            --border: #2c3c52;
         }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
         body {
-            background-color: #f5f7fa;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
             padding: 20px;
+            background-image: radial-gradient(circle at 20% 20%, #16283c 0%, transparent 50%),
+                              radial-gradient(circle at 80% 80%, #12202f 0%, transparent 50%);
         }
-        .container {
-            background: #fff;
+        .app {
             width: 100%;
-            max-width: 650px;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            padding: 35px;
+            max-width: 920px;
         }
-        .title {
-            text-align: center;
-            font-size: 24px;
-            color: #2d3748;
-            margin-bottom: 30px;
-            font-weight: 600;
-        }
-        .form-group {
+
+        /* 顶栏 */
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 20px;
         }
-        .form-label {
-            display: block;
-            font-size: 14px;
-            color: #4a5568;
-            margin-bottom: 8px;
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 700;
         }
-        .form-input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #e2e8f0;
+        .brand .logo {
+            width: 34px; height: 34px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+        }
+        .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+        /* 标签导航 */
+        .tabs {
+            display: flex;
+            gap: 6px;
+            background: var(--panel);
+            padding: 6px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .tab {
+            flex: 1;
+            padding: 10px 0;
+            text-align: center;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            font-size: 15px;
             border-radius: 8px;
+            cursor: pointer;
+            transition: all .2s;
+        }
+        .tab.active { background: var(--panel-2); color: var(--text); font-weight: 600; }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px;
+        }
+
+        /* 表单 */
+        .form-group { margin-bottom: 18px; }
+        .form-label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 7px; }
+        .form-input, .form-select {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
             font-size: 15px;
             outline: none;
+            transition: border .2s;
         }
-        .form-input:focus {
-            border-color: #4299e1;
-        }
-        .btn-group {
-            display: flex;
-            gap: 12px;
-            margin-top: 25px;
-            justify-content: center;
-        }
+        .form-input:focus, .form-select:focus { border-color: var(--accent); }
+        .form-row { display: flex; gap: 14px; }
+        .form-row > div { flex: 1; }
+
         .btn {
-            padding: 12px 25px;
+            padding: 12px 22px;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 15px;
             cursor: pointer;
+            transition: opacity .2s, transform .1s;
         }
-        .btn-primary {
-            background-color: #4299e1;
-            color: #fff;
-        }
-        .btn-success {
-            background-color: #38a169;
-            color: #fff;
-        }
-        .btn-danger {
-            background-color: #e53e3e;
-            color: #fff;
-        }
-        .btn-gray {
-            background-color: #e2e8f0;
-            color: #2d3748;
-        }
-        .error-tip {
-            color: red;
-            font-size: 12px;
-            margin-top: 4px;
-            display: none;
-        }
-        .info-view {
-            display: block;
-        }
+        .btn:active { transform: scale(.97); }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-success { background: var(--accent-2); color: #fff; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-ghost { background: var(--panel-2); color: var(--text-dim); }
+        .btn-sm { padding: 7px 14px; font-size: 13px; }
+        .btn:hover { opacity: .85; }
+
+        .error-tip { color: #f87171; font-size: 12px; margin-top: 5px; display: none; }
+
+        /* 登录/注册居中卡片 */
+        .auth-card { max-width: 430px; margin: 0 auto; }
+        .auth-title { text-align: center; font-size: 24px; font-weight: 700; margin-bottom: 26px; }
+        .auth-switch { text-align: center; margin-top: 16px; color: var(--text-dim); font-size: 14px; }
+        .auth-switch a { color: var(--accent); cursor: pointer; text-decoration: none; }
+
+        /* 资料展示 */
         .info-item {
-            margin-bottom: 18px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #eee;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 0; border-bottom: 1px solid var(--border);
         }
-        .info-label {
-            font-size: 14px;
-            color: #718096;
-            margin-bottom: 6px;
+        .info-item:last-child { border-bottom: none; }
+        .info-label { color: var(--text-dim); font-size: 14px; }
+        .info-value { font-size: 15px; text-align: right; }
+        .avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--panel-2); display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto 14px; }
+
+        /* 设备网格 */
+        .device-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+        .device-card {
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: border .2s;
         }
-        .info-value {
-            font-size: 16px;
-            color: #2d3748;
-        }
-        .info-edit {
-            display: none;
-        }
-        #loginPage, #registerPage {
-            display: block;
-        }
-        #profilePage {
-            display: none;
-        }
+        .device-card.on { border-color: var(--accent-2); }
+        .device-head { display: flex; justify-content: space-between; align-items: center; }
+        .device-icon { font-size: 26px; }
+        .device-status-dot { width: 10px; height: 10px; border-radius: 50%; background: #64748b; }
+        .device-card.on .device-status-dot { background: var(--accent-2); box-shadow: 0 0 8px var(--accent-2); }
+        .device-name { font-weight: 600; font-size: 15px; }
+        .device-meta { font-size: 12px; color: var(--text-dim); }
+        .device-actions { display: flex; gap: 6px; margin-top: auto; }
+        .device-actions .btn { flex: 1; }
+
+        .empty { text-align: center; color: var(--text-dim); padding: 40px 0; }
+
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; background: var(--panel-2); }
+        .badge-admin { background: #7c3aed; color: #fff; }
+
+        /* 用户表格（管理员视图） */
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--border); }
+        th { color: var(--text-dim); font-weight: 500; }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="app">
         <!-- 登录页 -->
-        <div id="loginPage">
-            <h2 class="title">Login</h2>
-            <div class="form-group">
-                <label class="form-label">Username</label>
-                <input type="text" id="loginUid" class="form-input">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Password</label>
-                <input type="password" id="loginPwd" class="form-input">
-            </div>
-            <div class="error-tip" id="loginErr"></div>
-            <div class="btn-group">
-                <button class="btn btn-primary" id="loginBtn">Login</button>
-                <button class="btn btn-gray" id="toRegisterBtn">Register</button>
+        <div id="authView">
+            <div class="card auth-card">
+                <h2 class="auth-title" id="authTitle">登录智能家居系统</h2>
+                <!-- 登录表单 -->
+                <div id="loginForm">
+                    <div class="form-group">
+                        <label class="form-label">用户名</label>
+                        <input type="text" id="loginUid" class="form-input" placeholder="请输入用户名">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">密码</label>
+                        <input type="password" id="loginPwd" class="form-input" placeholder="请输入密码">
+                    </div>
+                    <div class="error-tip" id="loginErr"></div>
+                    <button class="btn btn-primary" id="loginBtn" style="width:100%;margin-top:8px;">登录</button>
+                    <div class="auth-switch">还没有账号？<a id="toRegister">立即注册</a></div>
+                </div>
+                <!-- 注册表单 -->
+                <div id="registerForm" style="display:none;">
+                    <div class="form-group">
+                        <label class="form-label">用户名（4-20位字母/数字/下划线）</label>
+                        <input type="text" id="regUid" class="form-input" placeholder="请输入用户名">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">密码（6-32位）</label>
+                        <input type="password" id="regPwd" class="form-input" placeholder="请输入密码">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">手机号</label>
+                        <input type="text" id="regPhone" class="form-input" placeholder="11位手机号">
+                    </div>
+                    <div class="error-tip" id="regErr"></div>
+                    <button class="btn btn-success" id="regBtn" style="width:100%;margin-top:8px;">注册</button>
+                    <div class="auth-switch">已有账号？<a id="toLogin">返回登录</a></div>
+                </div>
             </div>
         </div>
 
-        <!-- 注册页 -->
-        <div id="registerPage" style="display: none;">
-            <h2 class="title">Register</h2>
-            <div class="form-group">
-                <label class="form-label">Username (4-20 characters: letters, numbers, underscore)</label>
-                <input type="text" id="regUid" class="form-input" placeholder="4~20 characters">
+        <!-- 主界面 -->
+        <div id="mainView" style="display:none;">
+            <div class="topbar">
+                <div class="brand"><span class="logo">🏠</span> 智能家居控制中心</div>
+                <div class="topbar-right">
+                    <span id="roleBadge" class="badge"></span>
+                    <button class="btn btn-ghost btn-sm" id="logoutBtn">退出登录</button>
+                </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Password (6-32 characters)</label>
-                <input type="password" id="regPwd" class="form-input" placeholder="6~32 characters">
+
+            <div class="tabs">
+                <button class="tab active" data-tab="devices">我的设备</button>
+                <button class="tab" data-tab="profile">个人资料</button>
+                <button class="tab" data-tab="admin" id="adminTab" style="display:none;">用户管理</button>
             </div>
-            <div class="form-group">
-                <label class="form-label">Phone Number</label>
-                <input type="text" id="regPhone" class="form-input" placeholder="11 digits, starting with 1">
+
+            <!-- 设备页 -->
+            <div id="tab-devices" class="card">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+                    <h3 style="font-size:17px;">设备列表</h3>
+                    <button class="btn btn-primary btn-sm" id="addDeviceBtn">+ 添加设备</button>
+                </div>
+                <div class="device-grid" id="deviceGrid"></div>
             </div>
-            <div class="error-tip" id="regErr"></div>
-            <div class="btn-group">
-                <button class="btn btn-success" id="regBtn">Register</button>
-                <button class="btn btn-gray" id="toLoginBtn">Back to Login</button>
+
+            <!-- 个人资料页 -->
+            <div id="tab-profile" class="card" style="display:none;">
+                <div class="avatar" id="avatarIcon">👤</div>
+                <div id="profileView">
+                    <div class="info-item"><span class="info-label">用户ID</span><span class="info-value" id="showId"></span></div>
+                    <div class="info-item"><span class="info-label">用户名</span><span class="info-value" id="showUsername"></span></div>
+                    <div class="info-item"><span class="info-label">真实姓名</span><span class="info-value" id="showName"></span></div>
+                    <div class="info-item"><span class="info-label">性别</span><span class="info-value" id="showGender"></span></div>
+                    <div class="info-item"><span class="info-label">年龄</span><span class="info-value" id="showAge"></span></div>
+                    <div class="info-item"><span class="info-label">手机号</span><span class="info-value" id="showPhone"></span></div>
+                    <div class="info-item"><span class="info-label">邮箱</span><span class="info-value" id="showEmail"></span></div>
+                    <div class="info-item"><span class="info-label">简介</span><span class="info-value" id="showBio"></span></div>
+                    <div style="margin-top:20px;text-align:right;">
+                        <button class="btn btn-primary btn-sm" id="editBtn">编辑资料</button>
+                    </div>
+                </div>
+                <div id="profileEdit" style="display:none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">真实姓名</label>
+                            <input type="text" id="editName" class="form-input">
+                            <div class="error-tip" id="nameError">姓名不能为空</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">性别</label>
+                            <select id="editGenderSelect" class="form-select">
+                                <option value="MALE">男</option>
+                                <option value="FEMALE">女</option>
+                                <option value="SECRET">保密</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">生日</label>
+                            <input type="date" id="birthDate" class="form-input">
+                            <div class="error-tip" id="birthError">请选择有效生日</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">邮箱</label>
+                            <input type="text" id="editEmail" class="form-input">
+                            <div class="error-tip" id="emailError">邮箱格式不正确</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">简介</label>
+                        <input type="text" id="editBio" class="form-input">
+                    </div>
+                    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
+                        <button class="btn btn-ghost btn-sm" id="cancelBtn">取消</button>
+                        <button class="btn btn-success btn-sm" id="saveBtn">保存</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 管理员用户管理页 -->
+            <div id="tab-admin" class="card" style="display:none;">
+                <h3 style="font-size:17px;margin-bottom:18px;">全平台用户</h3>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>ID</th><th>用户名</th><th>姓名</th><th>手机号</th><th>角色</th></tr></thead>
+                        <tbody id="adminUserTable"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
+    </div>
 
-        <!-- 个人信息主页 -->
-        <div id="profilePage">
-            <h2 class="title">Personal Profile</h2>
-
-            <div id="infoView" class="info-view">
-                <div class="info-item">
-                    <div class="info-label">User ID</div>
-                    <div id="showId" class="info-value"></div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Username</div>
-                    <div id="showUsername" class="info-value"></div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Full Name</div>
-                    <div id="showName" class="info-value"></div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Gender</div>
-                    <div id="showGender" class="info-value"></div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Age</div>
-                    <div id="showAge" class="info-value"></div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Phone (cannot be changed)</div>
-                    <div id="showPhone" class="info-value"></div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Email</div>
-                    <div id="showEmail" class="info-value"></div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Bio</div>
-                    <div id="showBio" class="info-value"></div>
-                </div>
+    <!-- 添加设备弹窗 -->
+    <div id="addDeviceModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);justify-content:center;align-items:center;">
+        <div class="card" style="width:380px;">
+            <h3 style="margin-bottom:18px;">添加设备</h3>
+            <div class="form-group">
+                <label class="form-label">设备名称</label>
+                <input type="text" id="deviceName" class="form-input" placeholder="如：客厅灯">
             </div>
-
-            <div id="infoEdit" class="info-edit">
-                <div class="form-group">
-                    <label class="form-label">Full Name</label>
-                    <input type="text" id="editName" class="form-input">
-                    <div class="error-tip" id="nameError">Name cannot be empty.</div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Gender</label>
-                    <select id="editGenderSelect" class="form-input">
-                        <option value="MALE">Male</option>
-                        <option value="FEMALE">Female</option>
-                        <option value="SECRET">Secret</option>
-                    </select>
-                    <div class="error-tip" id="genderError">Please fill in gender.</div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Date of Birth</label>
-                    <input type="date" id="birthDate" class="form-input">
-                    <div class="error-tip" id="birthError">Please select a valid birth date.</div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="text" id="editEmail" class="form-input">
-                    <div class="error-tip" id="emailError">Please enter a valid email.</div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Bio</label>
-                    <input type="text" id="editBio" class="form-input">
-                </div>
+            <div class="form-group">
+                <label class="form-label">设备类型</label>
+                <select id="deviceType" class="form-select">
+                    <option value="LIGHT">灯</option>
+                    <option value="AC">空调</option>
+                    <option value="TV">电视</option>
+                    <option value="CURTAIN">窗帘</option>
+                    <option value="SPEAKER">音箱</option>
+                    <option value="SENSOR">传感器</option>
+                </select>
             </div>
-
-            <div class="btn-group">
-                <button id="editBtn" class="btn btn-primary">Edit</button>
-                <button id="saveBtn" class="btn btn-success" style="display:none;">Save</button>
-                <button id="cancelBtn" class="btn btn-gray" style="display:none;">Cancel</button>
-                <button id="logoutBtn" class="btn btn-danger" style="display:none;">Logout</button>
+            <div class="error-tip" id="deviceErr"></div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
+                <button class="btn btn-ghost btn-sm" id="closeDeviceModal">取消</button>
+                <button class="btn btn-primary btn-sm" id="confirmAddDevice">确定</button>
             </div>
         </div>
     </div>
 
     <script>
-        // 页面容器
-        const loginPage = document.getElementById('loginPage');
-        const registerPage = document.getElementById('registerPage');
-        const profilePage = document.getElementById('profilePage');
+        // ===== 全局状态 =====
+        let currentToken = localStorage.getItem('token') || '';
+        let currentRole = localStorage.getItem('role') || '';
+        let isAdmin = currentRole === 'ADMIN';
 
-        // 登录
-        const loginUid = document.getElementById('loginUid');
-        const loginPwd = document.getElementById('loginPwd');
-        const loginBtn = document.getElementById('loginBtn');
+        // ===== 工具：请求封装 =====
+        async function api(path, method, body) {
+            const opts = { method, headers: { 'Content-Type': 'application/json' } };
+            if (body) opts.body = JSON.stringify(body);
+            const res = await fetch(path, opts);
+            return res.json();
+        }
+
+        // ===== 页面元素 =====
+        const authView = document.getElementById('authView');
+        const mainView = document.getElementById('mainView');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
         const loginErr = document.getElementById('loginErr');
-        // 注册
-        const regUid = document.getElementById('regUid');
-        const regPwd = document.getElementById('regPwd');
-        const regPhone = document.getElementById('regPhone');
-        const regBtn = document.getElementById('regBtn');
         const regErr = document.getElementById('regErr');
-        // 切换按钮
-        const toRegisterBtn = document.getElementById('toRegisterBtn');
-        const toLoginBtn = document.getElementById('toLoginBtn');
+        const deviceGrid = document.getElementById('deviceGrid');
+        const roleBadge = document.getElementById('roleBadge');
+        const adminTab = document.getElementById('adminTab');
+        const adminUserTable = document.getElementById('adminUserTable');
+        const addDeviceModal = document.getElementById('addDeviceModal');
 
-        // 个人信息元素
-        const infoView = document.getElementById('infoView');
-        const infoEdit = document.getElementById('infoEdit');
-        const editBtn = document.getElementById('editBtn');
-        const saveBtn = document.getElementById('saveBtn');
-        const cancelBtn = document.getElementById('cancelBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
+        // ===== 登录态恢复（关键：刷新不再掉登录）=====
+        function restoreSession() {
+            if (!currentToken) return;
+            // 有 token 就尝试恢复，验证失败会自动登出
+            showMain();
+            loadUserInfo();
+            loadDevices();
+            if (isAdmin) loadAdminUsers();
+        }
 
-        const showId = document.getElementById('showId');
-        const showUsername = document.getElementById('showUsername');
-        const showName = document.getElementById('showName');
-        const showGender = document.getElementById('showGender');
-        const showAge = document.getElementById('showAge');
-        const showPhone = document.getElementById('showPhone');
-        const showEmail = document.getElementById('showEmail');
-        const showBio = document.getElementById('showBio');
+        function showMain() {
+            authView.style.display = 'none';
+            mainView.style.display = 'block';
+            roleBadge.textContent = isAdmin ? '管理员' : '普通用户';
+            roleBadge.className = 'badge' + (isAdmin ? ' badge-admin' : '');
+            adminTab.style.display = isAdmin ? 'block' : 'none';
+        }
 
-        const editName = document.getElementById('editName');
-        const editEmail = document.getElementById('editEmail');
-        const editBio = document.getElementById('editBio');
+        function logout() {
+            currentToken = '';
+            currentRole = '';
+            isAdmin = false;
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            authView.style.display = 'block';
+            mainView.style.display = 'none';
+            loginForm.style.display = 'block';
+            registerForm.style.display = 'none';
+        }
 
-        const editGenderSelect = document.getElementById('editGenderSelect');
-        const birthDateInput = document.getElementById('birthDate');
-
-        const nameError = document.getElementById('nameError');
-        const genderError = document.getElementById('genderError');
-        const birthError = document.getElementById('birthError');
-        const emailError = document.getElementById('emailError');
-
-        let currentToken = "";
-        const today = new Date().toISOString().split('T')[0];
-        birthDateInput.max = today;
-
-        // 前端校验规则（与 Spring 后端保持一致）
-        const phoneReg = /^1[3-9]\d{9}$/;                    // 手机号 11 位，1 开头
-        const userIdReg = /^[a-zA-Z0-9_]{4,20}$/;            // 账号 4-20 位字母数字下划线
-        const pwdReg = /^.{6,32}$/;                          // 密码 6-32 位
-        const emailReg = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;      // 邮箱格式
-
-        // 页面切换
-        toRegisterBtn.onclick = () => {
-            loginPage.style.display = 'none';
-            registerPage.style.display = 'block';
-            regErr.style.display = 'none';
-        };
-        toLoginBtn.onclick = () => {
-            registerPage.style.display = 'none';
-            loginPage.style.display = 'block';
+        // ===== 认证 =====
+        document.getElementById('toRegister').onclick = () => {
+            loginForm.style.display = 'none';
+            registerForm.style.display = 'block';
             loginErr.style.display = 'none';
+            document.getElementById('authTitle').textContent = '注册智能家居账号';
+        };
+        document.getElementById('toLogin').onclick = () => {
+            registerForm.style.display = 'none';
+            loginForm.style.display = 'block';
+            regErr.style.display = 'none';
+            document.getElementById('authTitle').textContent = '登录智能家居系统';
         };
 
-        // 注册提交
-        regBtn.onclick = async () => {
-            const uid = regUid.value.trim();
-            const pwd = regPwd.value.trim();
-            const phone = regPhone.value.trim();
+        document.getElementById('loginBtn').onclick = async () => {
+            const username = document.getElementById('loginUid').value.trim();
+            const password = document.getElementById('loginPwd').value.trim();
+            if (!username || !password) {
+                loginErr.textContent = '用户名和密码不能为空';
+                loginErr.style.display = 'block';
+                return;
+            }
+            const data = await api('/api/login', 'POST', { username, password });
+            if (!data.success) {
+                loginErr.textContent = data.message;
+                loginErr.style.display = 'block';
+                return;
+            }
+            currentToken = data.data.token;
+            currentRole = data.data.role;
+            isAdmin = currentRole === 'ADMIN';
+            localStorage.setItem('token', currentToken);
+            localStorage.setItem('role', currentRole);
+            showMain();
+            loadUserInfo();
+            loadDevices();
+            if (isAdmin) loadAdminUsers();
+            document.getElementById('loginPwd').value = '';
+        };
 
-            // 非空
-            if (!uid || !pwd || !phone) {
-                regErr.innerText = "All fields cannot be empty";
-                regErr.style.display = 'block';
-                return;
+        document.getElementById('regBtn').onclick = async () => {
+            const username = document.getElementById('regUid').value.trim();
+            const password = document.getElementById('regPwd').value.trim();
+            const phone = document.getElementById('regPhone').value.trim();
+            const usernameReg = /^[a-zA-Z0-9_]{4,20}$/;
+            const phoneReg = /^1[3-9]\d{9}$/;
+            if (!usernameReg.test(username)) {
+                regErr.textContent = '用户名需4-20位字母/数字/下划线';
+                regErr.style.display = 'block'; return;
             }
-            // 账号规则
-            if (!userIdReg.test(uid)) {
-                regErr.innerText = "Username: 4-20 chars, letters/numbers/underscore";
-                regErr.style.display = 'block';
-                return;
+            if (password.length < 6 || password.length > 32) {
+                regErr.textContent = '密码长度需6-32位';
+                regErr.style.display = 'block'; return;
             }
-            // 密码规则
-            if (!pwdReg.test(pwd)) {
-                regErr.innerText = "Password: 6-32 characters";
-                regErr.style.display = 'block';
-                return;
-            }
-            // 手机号规则
             if (!phoneReg.test(phone)) {
-                regErr.innerText = "Phone: 11 digits, must start with 1 (3-9)";
+                regErr.textContent = '手机号格式不正确';
+                regErr.style.display = 'block'; return;
+            }
+            const data = await api('/api/register', 'POST', { username, password, phone });
+            if (!data.success) {
+                regErr.textContent = data.message;
                 regErr.style.display = 'block';
                 return;
             }
-
-            const res = await fetch('/api/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: uid, password: pwd, phone: phone })
-            });
-            const data = await res.json();
-            if (!data.success) {
-                regErr.innerText = data.message;
-                regErr.style.display = 'block';
-            } else {
-                alert("Register success! Please login.");
-                registerPage.style.display = 'none';
-                loginPage.style.display = 'block';
-                regUid.value = '';
-                regPwd.value = '';
-                regPhone.value = '';
-            }
+            alert('注册成功，请登录');
+            document.getElementById('toLogin').click();
+            document.getElementById('regUid').value = '';
+            document.getElementById('regPwd').value = '';
+            document.getElementById('regPhone').value = '';
         };
 
-        // 登录
-        loginBtn.onclick = async () => {
-            const uid = loginUid.value.trim();
-            const pwd = loginPwd.value.trim();
-            if (!uid || !pwd) {
-                loginErr.innerText = "Username and Password cannot be empty";
-                loginErr.style.display = 'block';
-                return;
-            }
-            const res = await fetch('/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: uid, password: pwd })
-            });
-            const data = await res.json();
-            if (!data.success) {
-                loginErr.innerText = data.message;
-                loginErr.style.display = 'block';
-            } else {
-                // 保存 token（后续查/改资料都靠它），跳到资料页
-                currentToken = data.data.token;
-                loginPage.style.display = 'none';
-                registerPage.style.display = 'none';
-                profilePage.style.display = 'block';
-                loadUserInfo();
-            }
-        };
+        // ===== 标签切换 =====
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.onclick = () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                ['devices', 'profile', 'admin'].forEach(name => {
+                    document.getElementById('tab-' + name).style.display = 'none';
+                });
+                document.getElementById('tab-' + tab.dataset.tab).style.display = 'block';
+                if (tab.dataset.tab === 'admin') loadAdminUsers();
+            };
+        });
 
-        // 加载当前用户资料
+        // ===== 个人资料 =====
         async function loadUserInfo() {
-            const res = await fetch(`/api/user?token=${currentToken}`);
-            const data = await res.json();
+            const data = await api(`/api/user?token=${currentToken}`, 'GET');
             if (!data.success) {
-                alert(data.message);
-                logout();
+                if (data.message.includes('未登录')) logout();
                 return;
             }
             const u = data.data;
-            // userId 补零显示成 6 位（如 1 -> 000001）
-            showId.innerText = String(u.userId).padStart(6, '0');
-            showUsername.innerText = u.username || "";
-            showName.innerText = u.realName || "";
-            showGender.innerText = u.genderLabel || "";
-            showAge.innerText = u.birthday ? calculateAge(u.birthday) : "";
-            showPhone.innerText = u.phone || "";
-            showEmail.innerText = u.email || "";
-            showBio.innerText = u.bio || "";
-            if (u.birthday) birthDateInput.value = u.birthday;
+            document.getElementById('showId').textContent = String(u.userId).padStart(6, '0');
+            document.getElementById('showUsername').textContent = u.username || '';
+            document.getElementById('showName').textContent = u.realName || '';
+            document.getElementById('showGender').textContent = u.genderLabel || '';
+            document.getElementById('showAge').textContent = u.birthday ? calcAge(u.birthday) : '';
+            document.getElementById('showPhone').textContent = u.phone || '';
+            document.getElementById('showEmail').textContent = u.email || '';
+            document.getElementById('showBio').textContent = u.bio || '';
+            document.getElementById('avatarIcon').textContent = '👤';
+            if (u.birthday) document.getElementById('birthDate').value = u.birthday;
         }
 
-        // 计算年龄
-        function calculateAge(birthDate) {
-            const birth = new Date(birthDate);
-            const now = new Date();
-            let age = now.getFullYear() - birth.getFullYear();
-            const mDiff = now.getMonth() - birth.getMonth();
-            if (mDiff < 0 || (mDiff === 0 && now.getDate() < birth.getDate())) age--;
+        function calcAge(birthday) {
+            const b = new Date(birthday), n = new Date();
+            let age = n.getFullYear() - b.getFullYear();
+            const m = n.getMonth() - b.getMonth();
+            if (m < 0 || (m === 0 && n.getDate() < b.getDate())) age--;
             return age;
         }
 
-        // 验证姓名
-        function validateName() {
-            const n = editName.value.trim();
-            if (!n) {
-                nameError.style.display = 'block';
-                editName.style.borderColor = 'red';
-                return false;
-            }
-            nameError.style.display = 'none';
-            editName.style.borderColor = '';
-            return true;
-        }
-        // 验证邮箱
-        function validateEmail() {
-            const e = editEmail.value.trim();
-            if (!emailReg.test(e)) {
-                emailError.style.display = 'block';
-                editEmail.style.borderColor = 'red';
-                return false;
-            }
-            emailError.style.display = 'none';
-            editEmail.style.borderColor = '';
-            return true;
-        }
-        // 验证生日
-        function validateBirth() {
-            const d = birthDateInput.value;
-            if (!d || d > today) {
-                birthError.style.display = 'block';
-                return false;
-            }
-            birthError.style.display = 'none';
-            return true;
-        }
-
-        // 编辑按钮
-        editBtn.onclick = () => {
-            editName.value = showName.innerText;
-            editEmail.value = showEmail.innerText;
-            editBio.value = showBio.innerText;
-
-            const g = showGender.innerText;
-            if (g === '男' || g === 'Male') editGenderSelect.value = 'MALE';
-            else if (g === '女' || g === 'Female') editGenderSelect.value = 'FEMALE';
-            else editGenderSelect.value = 'SECRET';
-
-            infoView.style.display = 'none';
-            infoEdit.style.display = 'block';
-            editBtn.style.display = 'none';
-            saveBtn.style.display = 'inline-block';
-            cancelBtn.style.display = 'inline-block';
+        document.getElementById('editBtn').onclick = () => {
+            document.getElementById('editName').value = document.getElementById('showName').textContent;
+            document.getElementById('editEmail').value = document.getElementById('showEmail').textContent;
+            document.getElementById('editBio').value = document.getElementById('showBio').textContent;
+            const g = document.getElementById('showGender').textContent;
+            document.getElementById('editGenderSelect').value = (g === '男') ? 'MALE' : (g === '女') ? 'FEMALE' : 'SECRET';
+            document.getElementById('profileView').style.display = 'none';
+            document.getElementById('profileEdit').style.display = 'block';
         };
-
-        // 取消
-        cancelBtn.onclick = () => {
-            infoView.style.display = 'block';
-            infoEdit.style.display = 'none';
-            editBtn.style.display = 'inline-block';
-            saveBtn.style.display = 'none';
-            cancelBtn.style.display = 'none';
+        document.getElementById('cancelBtn').onclick = () => {
+            document.getElementById('profileView').style.display = 'block';
+            document.getElementById('profileEdit').style.display = 'none';
         };
-
-        // 保存编辑资料
-        saveBtn.onclick = async () => {
-            if (!validateName()) return;
-            if (!validateEmail()) return;
-            if (!validateBirth()) return;
-
-            const birth = birthDateInput.value;
-
-            const postData = {
+        document.getElementById('saveBtn').onclick = async () => {
+            const realName = document.getElementById('editName').value.trim();
+            const email = document.getElementById('editEmail').value.trim();
+            const birthday = document.getElementById('birthDate').value;
+            const emailReg = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+            if (!realName) { document.getElementById('nameError').style.display = 'block'; return; }
+            if (!emailReg.test(email)) { document.getElementById('emailError').style.display = 'block'; return; }
+            if (!birthday || birthday > new Date().toISOString().split('T')[0]) { document.getElementById('birthError').style.display = 'block'; return; }
+            const data = await api('/api/user', 'POST', {
                 token: currentToken,
-                realName: editName.value.trim(),
-                gender: editGenderSelect.value,
-                birthday: birth,
-                email: editEmail.value.trim(),
-                bio: editBio.value.trim()
-                // phone 不提交：后端沿用原值（手机号不可修改）
-            };
-
-            const res = await fetch('/api/user', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(postData)
+                realName,
+                gender: document.getElementById('editGenderSelect').value,
+                birthday,
+                email,
+                bio: document.getElementById('editBio').value.trim()
             });
-            const result = await res.json();
+            if (!data.success) { alert(data.message); return; }
+            await loadUserInfo();
+            document.getElementById('profileView').style.display = 'block';
+            document.getElementById('profileEdit').style.display = 'none';
+            alert('保存成功');
+        };
 
-            if (!result.success) {
-                alert(result.message);
+        // ===== 设备管理 =====
+        const typeIcons = { LIGHT: '💡', AC: '❄️', TV: '📺', CURTAIN: '🪟', SPEAKER: '🔊', SENSOR: '📡' };
+
+        async function loadDevices() {
+            const data = await api(`/api/device/list?token=${currentToken}`, 'GET');
+            if (!data.success) return;
+            const devices = data.data.devices;
+            deviceGrid.innerHTML = '';
+            if (devices.length === 0) {
+                deviceGrid.innerHTML = '<div class="empty">暂无设备，点击右上角「添加设备」开始</div>';
                 return;
             }
+            devices.forEach(d => {
+                const on = d.status === 'ON';
+                const card = document.createElement('div');
+                card.className = 'device-card' + (on ? ' on' : '');
+                card.innerHTML = `
+                    <div class="device-head">
+                        <span class="device-icon">${typeIcons[d.type] || '🔌'}</span>
+                        <span class="device-status-dot"></span>
+                    </div>
+                    <div class="device-name">${d.name}</div>
+                    <div class="device-meta">${d.typeLabel} · ${d.statusLabel}</div>
+                    ${d.battery != null ? `<div class="device-meta">电量 ${d.battery}%</div>` : ''}
+                    <div class="device-actions">
+                        <button class="btn ${on ? 'btn-ghost' : 'btn-success'} btn-sm" onclick="toggleDevice(${d.deviceId})">${on ? '关闭' : '开启'}</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteDevice(${d.deviceId})">删除</button>
+                    </div>`;
+                deviceGrid.appendChild(card);
+            });
+        }
 
-            loadUserInfo();
-            infoView.style.display = 'block';
-            infoEdit.style.display = 'none';
-            editBtn.style.display = 'inline-block';
-            saveBtn.style.display = 'none';
-            cancelBtn.style.display = 'none';
-            alert('Saved successfully!');
+        window.toggleDevice = async (id) => {
+            const data = await api('/api/device/toggle', 'POST', { token: currentToken, deviceId: id });
+            if (!data.success) { alert(data.message); return; }
+            loadDevices();
+        };
+        window.deleteDevice = async (id) => {
+            if (!confirm('确定删除该设备？')) return;
+            const data = await api('/api/device/delete', 'POST', { token: currentToken, deviceId: id });
+            if (!data.success) { alert(data.message); return; }
+            loadDevices();
         };
 
-        // 登出：清空 token 回到登录页
-        function logout() {
-            currentToken = "";
-            profilePage.style.display = 'none';
-            loginPage.style.display = 'block';
-            loginUid.value = '';
-            loginPwd.value = '';
+        document.getElementById('addDeviceBtn').onclick = () => {
+            addDeviceModal.style.display = 'flex';
+        };
+        document.getElementById('closeDeviceModal').onclick = () => {
+            addDeviceModal.style.display = 'none';
+        };
+        document.getElementById('confirmAddDevice').onclick = async () => {
+            const name = document.getElementById('deviceName').value.trim();
+            const type = document.getElementById('deviceType').value;
+            if (!name) { document.getElementById('deviceErr').textContent = '设备名不能为空'; document.getElementById('deviceErr').style.display = 'block'; return; }
+            const data = await api('/api/device/add', 'POST', { token: currentToken, name, type });
+            if (!data.success) { document.getElementById('deviceErr').textContent = data.message; document.getElementById('deviceErr').style.display = 'block'; return; }
+            addDeviceModal.style.display = 'none';
+            document.getElementById('deviceName').value = '';
+            loadDevices();
+        };
+
+        // ===== 管理员：用户列表 =====
+        async function loadAdminUsers() {
+            const data = await api(`/api/admin/users?token=${currentToken}`, 'GET');
+            if (!data.success) { alert(data.message); return; }
+            adminUserTable.innerHTML = '';
+            data.data.users.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${String(u.userId).padStart(6, '0')}</td>
+                    <td>${u.username}</td>
+                    <td>${u.realName || '-'}</td>
+                    <td>${u.phone || '-'}</td>
+                    <td>${u.role === 'ADMIN' ? '<span class="badge badge-admin">管理员</span>' : '普通用户'}</td>`;
+                adminUserTable.appendChild(tr);
+            });
         }
-        logoutBtn.onclick = logout;
-        // 编辑模式下也能登出
-        logoutBtn.style.display = 'inline-block';
+
+        // ===== 登出 =====
+        document.getElementById('logoutBtn').onclick = logout;
+
+        // ===== 启动：优先恢复会话 =====
+        restoreSession();
     </script>
 </body>
 </html>

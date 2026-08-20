@@ -42,9 +42,14 @@ public class User {
     /** 昵称（展示用，可改）。 */
     private String nickname;
 
-    /** 真实姓名（可改）。 */
-    @Column(name = "real_name")
+    /** 真实姓名（可改，全平台唯一，不允许重名）。 */
+    @Column(name = "real_name", unique = true)
     private String realName;
+
+    /** 角色：普通用户 / 管理员。默认普通用户。 */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role = Role.USER;
 
     /** 性别。@Enumerated(STRING) 让库里存 "MALE"/"FEMALE" 而不是序号。 */
     @Enumerated(EnumType.STRING)
@@ -106,6 +111,14 @@ public class User {
 
     public void setRealName(String realName) {
         this.realName = realName;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     public Gender getGender() {
