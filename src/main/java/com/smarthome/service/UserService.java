@@ -2,6 +2,7 @@ package com.smarthome.service;
 
 import java.util.Optional;
 
+import com.smarthome.dto.ProfileForm;
 import com.smarthome.model.User;
 import com.smarthome.repository.UserRepository;
 
@@ -10,11 +11,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 个人资料相关的业务逻辑：注册（初始化用户）、查看、修改。
+ * 个人资料相关的业务逻辑：注册（只建账号）、查看、修改资料。
  *
  * <p>注意它和 AuthService 都依赖 UserRepository —— 容器里只会有一个
- * UserRepository 的实例（默认单例），两个 Service 拿到的是同一个对象。
- * 这正是 IoC 容器的价值：共享的依赖不用各自 new 一份。
+ * UserRepository 实例（默认单例），两个 Service 注入的是同一个对象。
+ *
+ * <p>校验在哪里做？Controller 层用 @Valid 检查格式（手机号正则、生日不超今天），
+ * Service 层只负责“合法数据怎么存”。分层清晰的校验就是正常网页服务的做法。
  */
 @Service
 public class UserService {
@@ -28,20 +31,13 @@ public class UserService {
     }
 
     /**
-     * 注册一个新用户。密码在这里被哈希后再存库。
-     * encode(raw) 就是“哈希”动作，存进去的是一串乱码，不是明文。
+     * 注册：只创建账号 + 哈希后的密码，资料留空，之后在个人页补全。
      */
-    public User register(String username, String rawPassword, String nickname, String email, String bio) {
+    public User register(String username, String rawPassword) {
         if (userRepository.existsByUsername(username)) {
             throw new IllegalArgumentException("用户名已存在: " + username);
         }
-        User user = new User(
-                username,
-                passwordEncoder.encode(rawPassword),
-                nickname,
-                email,
-                bio
-        );
+        User user = new User(username, passwordEncoder.encode(rawPassword));
         return userRepository.save(user);
     }
 
@@ -50,17 +46,21 @@ public class UserService {
     }
 
     /**
-     * 更新个人资料（昵称 / 邮箱 / 简介）。账号名和密码不在这里改。
-     * @Transactional 表示这一组写库操作要么全部成功、要么全部回滚。
+     * 用表单数据更新个人资料。
+     * @Transactional：这一组写操作要么全部成功、要么全部回滚。
+     * JPA 的“脏检查”会在事务提交时自动把修改同步回数据库。
      */
     @Transactional
-    public User updateProfile(Long id, String nickname, String email, String bio) {
+    public User updateProfile(Long id, ProfileForm form) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("用户不存在: " + id));
-        user.setNickname(nickname);
-        user.setEmail(email);
-        user.setBio(bio);
-        // JPA 的“脏检查”：对受管对象做修改，事务提交时自动同步回数据库。
+        user.setNickname(form.getNickname());
+        user.setRealName(form.getRealName());
+        user.setGender(form.getGender());
+        user.setBirthday(form.getBirthday());
+        user.setPhone(form.getPhone());
+        user.setEmail(form.getEmail());
+        user.setBio(form.getBio());
         return user;
     }
 }

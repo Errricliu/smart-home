@@ -6,7 +6,14 @@
 
 - 登录：输入账号密码，校验成功进入个人资料页
 - 登出：清除登录状态，回到登录页
-- 个人资料：登录后展示账号信息，可修改昵称 / 邮箱 / 简介并保存
+- 个人资料（登录后展示 / 修改 / 保存）：
+  - 用户ID：程序赋予，仅展示不可修改
+  - 账号：注册后不可修改
+  - 真实姓名、昵称、性别（男/女/保密）
+  - 生日：日历选择，不能超过今天（`@PastOrPresent` + 页面 `max` 属性双重限制）
+  - 手机号：格式校验 `^1[3-9]\d{9}$`（`@Pattern`）
+  - 邮箱：格式校验（`@Email`）
+  - 个人简介：选填
 - 安全基础：密码用 BCrypt 哈希存储（不存明文）；登录状态用 token（Cookie + 内存缓存）保持
 - 演示账号：`admin` / `123456`（启动时自动创建）
 
@@ -28,6 +35,8 @@ gradle bootRun
 com.smarthome
 ├── SmartHomeApplication  启动入口：Spring 从这里开始扫描组件
 ├── model/User            用户实体（对应数据库 users 表）
+│   └── Gender            性别枚举（男/女/保密）
+├── dto/ProfileForm       个人资料表单 DTO：承接网页表单 + 校验注解
 ├── repository/           数据访问层
 │   ├── UserRepository    接口，方法由 Spring Data JPA 动态生成实现
 │   └── SystemStatusRepository

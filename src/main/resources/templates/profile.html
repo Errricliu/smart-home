@@ -12,25 +12,15 @@
             padding: 40px 20px;
             color: #333;
         }
-        .container {
-            max-width: 560px;
-            margin: 0 auto;
-        }
+        .container { max-width: 560px; margin: 0 auto; }
         .topbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 24px;
         }
-        .topbar h1 {
-            font-size: 20px;
-            margin: 0;
-        }
-        .logout {
-            color: #667eea;
-            text-decoration: none;
-            font-size: 14px;
-        }
+        .topbar h1 { font-size: 20px; margin: 0; }
+        .logout { color: #667eea; text-decoration: none; font-size: 14px; }
         .card {
             background: #fff;
             border-radius: 12px;
@@ -50,17 +40,27 @@
             font-weight: bold;
             margin-bottom: 16px;
         }
-        .username {
-            font-size: 14px;
-            color: #999;
+        .readonly-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 4px;
         }
+        .readonly-box {
+            flex: 1;
+            background: #f7f8fa;
+            border: 1px dashed #e0e0e0;
+            border-radius: 8px;
+            padding: 10px 13px;
+        }
+        .readonly-box .k { font-size: 12px; color: #999; margin-bottom: 3px; }
+        .readonly-box .v { font-size: 15px; color: #555; }
         label {
             display: block;
             font-size: 13px;
             color: #555;
             margin: 16px 0 6px;
         }
-        input, textarea {
+        input, select, textarea {
             width: 100%;
             box-sizing: border-box;
             padding: 11px 13px;
@@ -69,14 +69,10 @@
             font-size: 15px;
             font-family: inherit;
             outline: none;
+            background: #fff;
         }
-        textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-        input:focus, textarea:focus {
-            border-color: #667eea;
-        }
+        textarea { resize: vertical; min-height: 80px; }
+        input:focus, select:focus, textarea:focus { border-color: #667eea; }
         button {
             margin-top: 22px;
             width: 100%;
@@ -88,9 +84,7 @@
             font-size: 16px;
             cursor: pointer;
         }
-        button:hover {
-            background: #5568d3;
-        }
+        button:hover { background: #5568d3; }
         .saved {
             background: #e8f7ee;
             color: #2e8b57;
@@ -100,6 +94,12 @@
             font-size: 14px;
             margin-top: 18px;
         }
+        .field-error {
+            color: #d33;
+            font-size: 13px;
+            margin-top: 4px;
+        }
+        input.invalid, select.invalid { border-color: #d33; }
     </style>
 </head>
 <body>
@@ -110,18 +110,58 @@
     </div>
 
     <div class="card">
-        <div class="avatar" th:text="${user.nickname != null and !user.nickname.isEmpty()} ? ${#strings.substring(user.nickname, 0, 1)} : ${#strings.substring(user.username, 0, 1)}"></div>
-        <div class="username">账号：<span th:text="${user.username}"></span></div>
+        <div class="avatar"
+             th:text="${user.nickname != null and !user.nickname.isEmpty()} ? ${#strings.substring(user.nickname, 0, 1)} : '?'"></div>
 
-        <form th:action="@{/profile}" method="post">
+        <!-- 程序赋予、不可修改的信息 -->
+        <div class="readonly-row">
+            <div class="readonly-box">
+                <div class="k">用户ID（不可修改）</div>
+                <div class="v" th:text="${user.id}"></div>
+            </div>
+            <div class="readonly-box">
+                <div class="k">账号（不可修改）</div>
+                <div class="v" th:text="${user.username}"></div>
+            </div>
+        </div>
+
+        <form th:action="@{/profile}" method="post" th:object="${form}">
             <label for="nickname">昵称</label>
-            <input type="text" id="nickname" name="nickname" th:value="${user.nickname}">
+            <input type="text" id="nickname" th:field="*{nickname}"
+                   th:classappend="${#fields.hasErrors('nickname')} ? 'invalid'">
+            <div class="field-error" th:if="${#fields.hasErrors('nickname')}" th:errors="*{nickname}"></div>
+
+            <label for="realName">真实姓名</label>
+            <input type="text" id="realName" th:field="*{realName}"
+                   th:classappend="${#fields.hasErrors('realName')} ? 'invalid'">
+            <div class="field-error" th:if="${#fields.hasErrors('realName')}" th:errors="*{realName}"></div>
+
+            <label for="gender">性别</label>
+            <select id="gender" th:field="*{gender}"
+                    th:classappend="${#fields.hasErrors('gender')} ? 'invalid'">
+                <option value="">-- 请选择 --</option>
+                <option th:each="g : ${T(com.smarthome.model.Gender).values()}"
+                        th:value="${g.name()}" th:text="${g.label}"></option>
+            </select>
+            <div class="field-error" th:if="${#fields.hasErrors('gender')}" th:errors="*{gender}"></div>
+
+            <label for="birthday">生日</label>
+            <input type="date" id="birthday" th:field="*{birthday}" th:attr="max=${today}"
+                   th:classappend="${#fields.hasErrors('birthday')} ? 'invalid'">
+            <div class="field-error" th:if="${#fields.hasErrors('birthday')}" th:errors="*{birthday}"></div>
+
+            <label for="phone">手机号</label>
+            <input type="tel" id="phone" th:field="*{phone}" placeholder="11 位手机号"
+                   th:classappend="${#fields.hasErrors('phone')} ? 'invalid'">
+            <div class="field-error" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
 
             <label for="email">邮箱</label>
-            <input type="email" id="email" name="email" th:value="${user.email}">
+            <input type="email" id="email" th:field="*{email}"
+                   th:classappend="${#fields.hasErrors('email')} ? 'invalid'">
+            <div class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
 
-            <label for="bio">个人简介</label>
-            <textarea id="bio" name="bio" th:text="${user.bio}"></textarea>
+            <label for="bio">个人简介（选填）</label>
+            <textarea id="bio" th:field="*{bio}"></textarea>
 
             <button type="submit">保存修改</button>
         </form>

@@ -14,11 +14,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * 登录 / 登出 / 会话缓存的单元测试。
+ * 登录 / 登出 / 会话缓存的测试。
  *
- * <p>@SpringBootTest 会启动一个真实的 Spring 容器，
- * @Autowired 表示“请容器把 bean 注入到我的测试字段里”。
- * 这本身就是 IoC 最直观的体现。
+ * <p>@SpringBootTest 启动一个真实的 Spring 容器，
+ * @Autowired 表示“请容器把 bean 注入进来”——IoC 最直观的体现。
  */
 @SpringBootTest
 class AuthServiceTest {
@@ -32,7 +31,7 @@ class AuthServiceTest {
     @Test
     void registerThenLoginThenLogout() {
         String username = "tester";
-        userService.register(username, "pass123", "测试用户", "t@smarthome.com", "bio");
+        userService.register(username, "pass123");
 
         // 密码正确 -> 拿到 token
         Optional<String> token = authService.login(username, "pass123");
@@ -50,7 +49,7 @@ class AuthServiceTest {
 
     @Test
     void wrongPasswordFails() {
-        userService.register("wrongpass", "right", "n", "e", "b");
+        userService.register("wrongpass", "right");
         assertTrue(authService.login("wrongpass", "wrong").isEmpty());
     }
 }

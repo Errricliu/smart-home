@@ -1,7 +1,11 @@
 package com.smarthome.model;
 
+import java.time.LocalDate;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -10,47 +14,62 @@ import jakarta.persistence.Table;
 /**
  * 用户实体。
  *
- * <p>这里用一个普通 Java 类（POJO）+ 几个注解，就把它变成了一张数据库表。
- * JPA 会读取这些注解，自动帮我们在数据库里建表、把对象的字段映射成列。
+ * <p>一个普通 Java 类（POJO）+ 几个注解，就对应数据库里的一张 users 表。
+ * JPA 读取这些注解完成“对象 <-> 表”的映射。
  *
- * <p>注意：这个类本身只是一个“数据容器”，它并不知道 Spring 的存在。
- * 之后它会被当作参数在 Controller / Service / Repository 之间传递。
+ * <p>字段分两类：
+ * - 程序管理的：id（程序赋予，不可从网页修改）、username、password（哈希）；
+ * - 用户可改的资料：nickname、realName、gender、birthday、phone、email、bio，
+ *   它们通过 ProfileForm 表单提交、由 UserService.updateProfile 写回。
  */
 @Entity
 @Table(name = "users")
 public class User {
 
+    /** 用户id，数据库自增，程序赋予。网页上只展示，不提供修改入口。 */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** 登录账号，必须唯一。 */
+    /** 登录账号，唯一，注册后不可改。 */
     @Column(nullable = false, unique = true)
     private String username;
 
-    /** 密码的哈希值，绝不直接存明文。 */
+    /** 密码的哈希值，绝不存明文。 */
     @Column(nullable = false)
     private String password;
 
-    /** 昵称，用于在个人页展示。 */
+    /** 昵称（展示用，可改）。 */
     private String nickname;
 
-    /** 邮箱，可修改。 */
+    /** 真实姓名（可改）。 */
+    @Column(name = "real_name")
+    private String realName;
+
+    /** 性别。@Enumerated(STRING) 让库里存 "MALE"/"FEMALE" 而不是序号。 */
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
+    /** 生日（可改，网页上限制不能超过今天）。 */
+    private LocalDate birthday;
+
+    /** 手机号（可改，有格式校验）。 */
+    private String phone;
+
+    /** 邮箱（可改，有格式校验）。 */
     private String email;
 
-    /** 一句话自我介绍，可修改。 */
+    /** 一句话简介（选填）。 */
     private String bio;
 
-    // JPA 要求有一个无参构造方法，方便它用反射创建对象。
+    // JPA 要求无参构造，便于它用反射创建对象。
     protected User() {
     }
 
-    public User(String username, String password, String nickname, String email, String bio) {
+    /** 注册时只需要账号和密码，资料可以之后在个人页补全。 */
+    public User(String username, String password) {
         this.username = username;
         this.password = password;
-        this.nickname = nickname;
-        this.email = email;
-        this.bio = bio;
     }
 
     public Long getId() {
@@ -75,6 +94,38 @@ public class User {
 
     public void setNickname(String nickname) {
         this.nickname = nickname;
+    }
+
+    public String getRealName() {
+        return realName;
+    }
+
+    public void setRealName(String realName) {
+        this.realName = realName;
+    }
+
+    public Gender getGender() {
+        return gender;
+    }
+
+    public void setGender(Gender gender) {
+        this.gender = gender;
+    }
+
+    public LocalDate getBirthday() {
+        return birthday;
+    }
+
+    public void setBirthday(LocalDate birthday) {
+        this.birthday = birthday;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 
     public String getEmail() {

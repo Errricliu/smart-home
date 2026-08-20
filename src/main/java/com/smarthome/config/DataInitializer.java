@@ -1,5 +1,10 @@
 package com.smarthome.config;
 
+import java.time.LocalDate;
+
+import com.smarthome.dto.ProfileForm;
+import com.smarthome.model.Gender;
+import com.smarthome.model.User;
 import com.smarthome.repository.UserRepository;
 import com.smarthome.service.UserService;
 
@@ -9,8 +14,8 @@ import org.springframework.stereotype.Component;
 /**
  * 启动时初始化一个演示账号，方便直接登录测试。
  *
- * <p>CommandLineRunner 是 Spring Boot 提供的钩子：应用启动完成后、
- * 所有 bean 都创建好之后，会调用它的 run 方法。这里用它来“造一点初始数据”。
+ * <p>CommandLineRunner 是 Spring Boot 的钩子：容器里所有 bean 就绪后
+ * 才会执行 run 方法，所以这里可以放心地依赖别的 bean。
  */
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -28,6 +33,12 @@ public class DataInitializer implements CommandLineRunner {
         if (userRepository.existsByUsername("admin")) {
             return;
         }
-        userService.register("admin", "123456", "管理员", "admin@smarthome.com", "你好，我是智能家居管理员");
+        // 先注册账号，再补全个人资料（和用户在网页上的操作顺序一致）
+        User admin = userService.register("admin", "123456");
+        userService.updateProfile(admin.getId(), new ProfileForm(
+                "管理员", "张三", Gender.MALE,
+                LocalDate.of(2000, 1, 1),
+                "13800138000", "admin@smarthome.com",
+                "智能家居演示账号"));
     }
 }
