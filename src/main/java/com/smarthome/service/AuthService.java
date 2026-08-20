@@ -1,11 +1,11 @@
 package com.smarthome.service;
 
-import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.smarthome.exception.LoginLockedException;
 import com.smarthome.model.User;
 import com.smarthome.repository.UserRepository;
 
@@ -23,6 +23,9 @@ import org.springframework.stereotype.Service;
  * <p>“登录状态缓存”这里用一个进程内的 Map（token -> username）来保存。
  * 真实项目会用 Redis 或 Spring Session 存到外部，这里先用最简单的方式，
  * 让你看清“登录后如何保持状态”这件事本身。
+ *
+ * <p>“防暴力破解”：把原来 Node 后端里的逻辑搬了过来 ——
+ * 连续 5 次输错密码，锁定 5 分钟。同样用进程内 Map 记录失败次数。
  */
 @Service
 public class AuthService {
@@ -33,6 +36,13 @@ public class AuthService {
     // token -> username。ConcurrentHashMap 保证并发安全。
     private final Map<String, String> sessions = new ConcurrentHashMap<>();
 
+    /** 连续失败多少次触发锁定。 */
+    private static final int MAX_WRONG_ATTEMPTS = 5;
+    /** 锁定时长（毫秒）：5 分钟。 */
+    private static final long LOCK_DURATION_MS = 5 * 60 * 1000L;
+    // username -> [连续失败次数, 锁定截止时间戳(毫秒)]。并发安全。
+    private final Map<String, long[]> loginFails = new ConcurrentHashMap<>();
+
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -40,17 +50,41 @@ public class AuthService {
 
     /**
      * 校验账号密码，成功后返回一个登录令牌（token），失败返回 empty。
+     *
+     * @throws LoginLockedException 该账号正处在锁定期内
      */
     public Optional<String> login(String username, String rawPassword) {
+        long now = System.currentTimeMillis();
+        long[] fail = loginFails.get(username);
+
+        // 1. 先查锁定：还在锁定期内直接拒绝，告诉用户还有多久
+        if (fail != null && fail[1] > now) {
+            long remainSec = (fail[1] - now) / 1000;
+            throw new LoginLockedException("登录错误次数过多，请 " + remainSec + " 秒后重试");
+        }
+
+        // 2. 比对密码。账号不存在也照常走一遍 matches（用空串比对），
+        //    让“账号不存在”和“密码错误”的耗时一致，防止通过时间差枚举账号。
         Optional<User> found = userRepository.findByUsername(username);
-        if (found.isEmpty()) {
+        boolean matched = found.isPresent()
+                && passwordEncoder.matches(rawPassword, found.get().getPassword());
+
+        // 3. 密码不对：记一次失败，累计到上限就锁定
+        if (!matched) {
+            if (fail == null) {
+                fail = new long[]{0, 0};
+            }
+            fail[0]++;
+            if (fail[0] >= MAX_WRONG_ATTEMPTS) {
+                fail[1] = now + LOCK_DURATION_MS;
+                fail[0] = 0; // 锁定期满后重新计数
+            }
+            loginFails.put(username, fail);
             return Optional.empty();
         }
-        User user = found.get();
-        // matches：拿用户输入的明文，和库里存的哈希做比对。
-        if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
-            return Optional.empty();
-        }
+
+        // 4. 登录成功：清除失败记录，发 token
+        loginFails.remove(username);
         String token = UUID.randomUUID().toString();
         sessions.put(token, username);
         return Optional.of(token);

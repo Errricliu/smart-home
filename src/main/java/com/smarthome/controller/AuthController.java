@@ -2,7 +2,7 @@ package com.smarthome.controller;
 
 import java.util.Optional;
 
-import com.smarthome.model.User;
+import com.smarthome.exception.LoginLockedException;
 import com.smarthome.service.AuthService;
 
 import org.springframework.stereotype.Controller;
@@ -42,7 +42,14 @@ public class AuthController {
                           @RequestParam String password,
                           HttpServletResponse response,
                           Model model) {
-        Optional<String> token = authService.login(username, password);
+        Optional<String> token;
+        try {
+            token = authService.login(username, password);
+        } catch (LoginLockedException e) {
+            // 防暴力破解：账号被锁定时，把剩余等待时间提示给用户
+            model.addAttribute("error", e.getMessage());
+            return "login";
+        }
         if (token.isEmpty()) {
             model.addAttribute("error", "账号或密码错误");
             return "login";

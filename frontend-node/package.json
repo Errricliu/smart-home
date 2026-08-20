@@ -1,0 +1,12 @@
+{
+  "name": "smart-home-frontend-node",
+  "version": "1.0.0",
+  "description": "Node.js 前端服务：托管 main.html 并把 /api 请求转发给 Spring Boot 后端（跨语言互通）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

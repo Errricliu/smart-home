@@ -41,6 +41,22 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    /**
+     * 注册（带手机号）：Node 前端注册时手机号必填，一并落库。
+     * 复用上面的逻辑：先校验账号唯一，再补手机号查重。
+     */
+    public User register(String username, String rawPassword, String phone) {
+        if (userRepository.existsByUsername(username)) {
+            throw new IllegalArgumentException("用户名已存在: " + username);
+        }
+        if (phone != null && userRepository.existsByPhone(phone)) {
+            throw new IllegalArgumentException("该手机号已绑定其他账号");
+        }
+        User user = new User(username, passwordEncoder.encode(rawPassword));
+        user.setPhone(phone);
+        return userRepository.save(user);
+    }
+
     public Optional<User> findById(Long id) {
         return userRepository.findById(id);
     }
