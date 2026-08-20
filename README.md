@@ -6,8 +6,11 @@
 
 - 登录：输入账号密码，校验成功进入个人资料页
 - 登出：清除登录状态，回到登录页
+- 注册：账号（4-20 位字母/数字/下划线）+ 密码（6-32 位）+ 确认密码一致 + 查重
+- 注销账号：删除全部资料、头像文件和登录状态（页面有二次确认）
+- 上传头像：仅 JPG/PNG/WebP/GIF，最大 2MB，存 `uploads/avatars/`，未上传时显示昵称首字母
 - 个人资料（登录后展示 / 修改 / 保存）：
-  - 用户ID：程序赋予，仅展示不可修改
+  - 用户ID：程序赋予，仅展示不可修改，页面以 6 位补零显示（如 `000001`）
   - 账号：注册后不可修改
   - 真实姓名、昵称、性别（男/女/保密）
   - 生日：日历选择，不能超过今天（`@PastOrPresent` + 页面 `max` 属性双重限制）
@@ -36,7 +39,9 @@ com.smarthome
 ├── SmartHomeApplication  启动入口：Spring 从这里开始扫描组件
 ├── model/User            用户实体（对应数据库 users 表）
 │   └── Gender            性别枚举（男/女/保密）
-├── dto/ProfileForm       个人资料表单 DTO：承接网页表单 + 校验注解
+├── dto/                  表单 DTO 层：承接网页表单 + 校验注解
+│   ├── ProfileForm       个人资料表单
+│   └── RegisterForm      注册表单
 ├── repository/           数据访问层
 │   ├── UserRepository    接口，方法由 Spring Data JPA 动态生成实现
 │   └── SystemStatusRepository

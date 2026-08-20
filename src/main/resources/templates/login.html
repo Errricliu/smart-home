@@ -74,6 +74,22 @@
             font-size: 14px;
             margin-bottom: 18px;
         }
+        .success {
+            background: #e8f7ee;
+            color: #2e8b57;
+            border: 1px solid #b7e4c7;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+        .footer {
+            margin-top: 16px;
+            font-size: 13px;
+            color: #aaa;
+            text-align: center;
+        }
+        .footer a { color: #667eea; text-decoration: none; }
         .hint {
             margin-top: 18px;
             font-size: 12px;
@@ -86,6 +102,8 @@
 <div class="card">
     <h1>Smart Home</h1>
     <div class="subtitle">登录你的智能家居账户</div>
+
+    <div class="success" th:if="${param.registered}">注册成功，请登录</div>
 
     <div class="error" th:if="${error}">
         <span th:text="${error}"></span>
@@ -102,6 +120,7 @@
     </form>
 
     <div class="hint">演示账号：admin / 密码：123456</div>
+    <div class="footer">没有账号？<a th:href="@{/register}">注册新账号</a></div>
 </div>
 </body>
 </html>

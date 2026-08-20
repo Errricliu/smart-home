@@ -26,25 +26,39 @@
             border-radius: 12px;
             padding: 28px;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            margin-bottom: 20px;
+        }
+        .avatar-row {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            margin-bottom: 16px;
         }
         .avatar {
-            width: 64px;
-            height: 64px;
+            width: 72px;
+            height: 72px;
             border-radius: 50%;
             background: #667eea;
             color: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 26px;
+            font-size: 28px;
             font-weight: bold;
-            margin-bottom: 16px;
+            flex-shrink: 0;
         }
-        .readonly-row {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 4px;
+        img.avatar { object-fit: cover; }
+        .avatar-upload input[type="file"] {
+            font-size: 13px;
+            padding: 8px;
         }
+        .avatar-upload button {
+            margin-top: 8px;
+            padding: 9px 16px;
+            width: auto;
+            font-size: 13px;
+        }
+        .readonly-row { display: flex; gap: 12px; margin-bottom: 4px; }
         .readonly-box {
             flex: 1;
             background: #f7f8fa;
@@ -53,7 +67,7 @@
             padding: 10px 13px;
         }
         .readonly-box .k { font-size: 12px; color: #999; margin-bottom: 3px; }
-        .readonly-box .v { font-size: 15px; color: #555; }
+        .readonly-box .v { font-size: 15px; color: #555; font-family: "SF Mono", Menlo, monospace; }
         label {
             display: block;
             font-size: 13px;
@@ -94,12 +108,28 @@
             font-size: 14px;
             margin-top: 18px;
         }
-        .field-error {
-            color: #d33;
-            font-size: 13px;
-            margin-top: 4px;
-        }
+        .field-error { color: #d33; font-size: 13px; margin-top: 4px; }
         input.invalid, select.invalid { border-color: #d33; }
+        .danger-card {
+            border: 1px solid #f0c6c6;
+        }
+        .danger-card h2 {
+            font-size: 15px;
+            color: #c0392b;
+            margin: 0 0 6px;
+        }
+        .danger-card p {
+            font-size: 13px;
+            color: #999;
+            margin: 0 0 14px;
+        }
+        .btn-danger {
+            background: #fff;
+            color: #c0392b;
+            border: 1px solid #c0392b;
+            margin-top: 0;
+        }
+        .btn-danger:hover { background: #fdf0f0; }
     </style>
 </head>
 <body>
@@ -110,14 +140,25 @@
     </div>
 
     <div class="card">
-        <div class="avatar"
-             th:text="${user.nickname != null and !user.nickname.isEmpty()} ? ${#strings.substring(user.nickname, 0, 1)} : '?'"></div>
+        <!-- 头像：上传过显示图片，否则显示昵称首字母 -->
+        <div class="avatar-row">
+            <img class="avatar" th:if="${user.avatarPath != null}"
+                 th:src="@{/avatars/{f}(f=${user.avatarPath})}" alt="头像">
+            <div class="avatar" th:if="${user.avatarPath == null}"
+                 th:text="${user.nickname != null and !user.nickname.isEmpty()} ? ${#strings.substring(user.nickname, 0, 1)} : '?'"></div>
+            <form class="avatar-upload" th:action="@{/profile/avatar}" method="post"
+                  enctype="multipart/form-data">
+                <input type="file" name="file" accept="image/jpeg,image/png,image/webp,image/gif" required>
+                <button type="submit">上传头像</button>
+                <div class="field-error" th:if="${avatarError}" th:text="${avatarError}"></div>
+            </form>
+        </div>
 
-        <!-- 程序赋予、不可修改的信息 -->
+        <!-- 程序赋予、不可修改的信息；用户ID 用 6 位补零格式展示 -->
         <div class="readonly-row">
             <div class="readonly-box">
                 <div class="k">用户ID（不可修改）</div>
-                <div class="v" th:text="${user.id}"></div>
+                <div class="v" th:text="${#numbers.formatInteger(user.id, 6)}"></div>
             </div>
             <div class="readonly-box">
                 <div class="k">账号（不可修改）</div>
@@ -167,6 +208,16 @@
         </form>
 
         <div class="saved" th:if="${saved}">已保存</div>
+    </div>
+
+    <!-- 危险操作区：注销账号 -->
+    <div class="card danger-card">
+        <h2>注销账号</h2>
+        <p>注销后账号及全部资料将被永久删除，不可恢复。</p>
+        <form th:action="@{/account/delete}" method="post"
+              onsubmit="return confirm('确定要注销账号吗？该操作不可恢复！');">
+            <button type="submit" class="btn-danger">注销账号</button>
+        </form>
     </div>
 </div>
 </body>

@@ -62,6 +62,10 @@ public class User {
     /** 一句话简介（选填）。 */
     private String bio;
 
+    /** 头像文件名（存 uploads/avatars/ 下），null 表示未上传。 */
+    @Column(name = "avatar_path")
+    private String avatarPath;
+
     // JPA 要求无参构造，便于它用反射创建对象。
     protected User() {
     }
@@ -142,5 +146,13 @@ public class User {
 
     public void setBio(String bio) {
         this.bio = bio;
+    }
+
+    public String getAvatarPath() {
+        return avatarPath;
+    }
+
+    public void setAvatarPath(String avatarPath) {
+        this.avatarPath = avatarPath;
     }
 }

@@ -45,6 +45,27 @@ public class UserService {
         return userRepository.findById(id);
     }
 
+    /** 更新头像文件名。 */
+    @Transactional
+    public void updateAvatar(Long id, String filename) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("用户不存在: " + id));
+        user.setAvatarPath(filename);
+    }
+
+    /**
+     * 注销账号：物理删除用户记录。
+     * 头像文件的删除由 Controller 协调（FileStorageService），
+     * Service 层只管数据本身。
+     */
+    @Transactional
+    public void deleteAccount(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new IllegalArgumentException("用户不存在: " + id);
+        }
+        userRepository.deleteById(id);
+    }
+
     /**
      * 用表单数据更新个人资料。
      * @Transactional：这一组写操作要么全部成功、要么全部回滚。
