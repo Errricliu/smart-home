@@ -22,6 +22,8 @@ const path = require('path');
 const BACKEND = { host: '127.0.0.1', port: 8080 };
 // 本服务监听端口
 const PORT = 3000;
+// 监听地址：0.0.0.0 表示监听所有网卡，让局域网内其他设备（手机等）也能访问
+const HOST = '0.0.0.0';
 
 const server = http.createServer((req, res) => {
   // 1. 托管前端页面
@@ -39,8 +41,8 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // 2. /api/* 转发给 Spring Boot
-  if (req.url.startsWith('/api/')) {
+  // 2. /api/* 和 /avatars/* 转发给 Spring Boot
+  if (req.url.startsWith('/api/') || req.url.startsWith('/avatars/')) {
     const headers = { ...req.headers };
     // 把 Host 头改成后端地址，避免 Java 端拿到的是本服务的域名
     headers.host = `${BACKEND.host}:${BACKEND.port}`;
@@ -62,8 +64,15 @@ const server = http.createServer((req, res) => {
 
     proxyReq.on('error', (err) => {
       console.error('[proxy] 转发失败:', err.message);
-      res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ success: false, message: '后端服务未启动，请先运行 Spring Boot' }));
+      // 关键：响应头可能已在 pipe 过程中发出（后端中途重启等场景），
+      // 此时不能再 writeHead，否则抛 ERR_HTTP_HEADERS_SENT 让进程崩溃。
+      // 未发送头才返回 502，已发送则直接销毁连接。
+      if (!res.headersSent) {
+        res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ success: false, message: '后端服务未启动，请先运行 Spring Boot' }));
+      } else {
+        res.destroy();
+      }
     });
 
     // 把浏览器的请求体传给后端
@@ -76,7 +85,16 @@ const server = http.createServer((req, res) => {
   res.end(JSON.stringify({ success: false, message: 'Not Found' }));
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, HOST, () => {
   console.log(`前端服务已启动: http://localhost:${PORT}`);
   console.log(`API 转发到 Spring Boot: http://${BACKEND.host}:${BACKEND.port}`);
+  // 打印局域网地址，方便手机等设备访问
+  const nets = require('os').networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      if (net.family === 'IPv4' && !net.internal) {
+        console.log(`局域网访问: http://${net.address}:${PORT}`);
+      }
+    }
+  }
 });

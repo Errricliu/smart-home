@@ -1,134 +1,157 @@
-# Smart Home
+# Smart Home · 智能家居控制中心
 
-智能家居项目（Spring Boot）。当前阶段实现了网页登录 / 登出 / 个人资料修改，目的是**边做功能边理解 Spring 的 IoC / DI 到底是怎么运作的**。
+一个学习用的智能家居项目，采用**前后端分离 + 跨语言互通**架构：Node.js 托管前端页面，Spring Boot 提供业务 API，MySQL 存储数据。边做功能边理解 Spring 的 IoC / DI 原理。
+
+## 架构
+
+```
+浏览器 -> main.html(前端 JS)
+              ↓ fetch /api/*  /avatars/*
+        Node.js (3000, 代理)
+              ↓ 转发
+   Spring Boot (8080, JSON API)
+              ↓
+           MySQL (3306)
+```
+
+- **前端**：`frontend-node/`（Node.js，纯内置模块，无需 npm install）
+- **后端**：`src/main/java/com/smarthome/`（Spring Boot）
+- **数据库**：MySQL 8.0（Docker Compose 管理）
 
 ## 已实现功能
 
-- 登录：输入账号密码，校验成功进入个人资料页
-- 登出：清除登录状态，回到登录页
-- 注册：账号（4-20 位字母/数字/下划线）+ 密码（6-32 位）+ 确认密码一致 + 查重
-- 注销账号：删除全部资料、头像文件和登录状态（页面有二次确认）
-- 上传头像：仅 JPG/PNG/WebP/GIF，最大 2MB，存 `uploads/avatars/`，未上传时显示昵称首字母
-- 个人资料（登录后展示 / 修改 / 保存）：
-  - 用户ID：程序赋予，仅展示不可修改，页面以 6 位补零显示（如 `000001`）
-  - 账号：注册后不可修改
-  - 真实姓名、昵称、性别（男/女/保密）
-  - 生日：日历选择，不能超过今天（`@PastOrPresent` + 页面 `max` 属性双重限制）
-  - 手机号：格式校验 `^1[3-9]\d{9}$`（`@Pattern`）
-  - 邮箱：格式校验（`@Email`）
-  - 个人简介：选填
-- 安全基础：密码用 BCrypt 哈希存储（不存明文）；登录状态用 token（Cookie + 内存缓存）保持
-- 演示账号：`admin` / `123456`（启动时自动创建）
+- **宣传首页**：导航栏 + 产品介绍 + 功能特性 + 登录/注册弹窗
+- **登录/登出**：token 存 localStorage，刷新不掉登录态
+- **防暴力破解**：连续错 5 次锁 5 分钟 + 防账号枚举（时间差抹平）
+- **注册**：账号/密码/手机号校验 + 用户名、手机号查重
+- **角色权限**：普通用户(USER) / 管理员(ADMIN)，管理员可看全平台用户和设备
+- **隐私脱敏**：管理员看他人手机号/邮箱/姓名时脱敏（`139****5678`、`l***@example.com`、`张*`），仅自己看完整
+- **个人资料**：用户ID(补零显示)、姓名(全平台唯一)、性别、生日(不超今天)、手机号、邮箱、简介
+- **头像上传**：JPG/PNG/WebP/GIF，最大 2MB，即时预览
+- **设备管理**：添加/删除/开关设备，设备类型(灯/空调/电视/窗帘/音箱/传感器)，按 ownerId 隔离归属
+- **并发能力**：Tomcat 线程池 + HikariCP 连接池调优，附带压测脚本
+
+演示账号：
+- 管理员 `admin` / `123456`（可看用户管理页）
+- 普通用户 `demo_user` / `123456`
 
 ## 运行方式
+
+### 1. 启动 MySQL（Docker）
+
+```bash
+docker compose up -d
+```
+
+### 2. 启动后端（Spring Boot）
 
 ```bash
 gradle bootRun
 ```
 
-浏览器访问 http://localhost:8080/login
+### 3. 启动前端（Node.js）
 
-> 注意：本项目根目录的 `gradle.properties` 里关闭了校园代理
-> （`proxy-dku.oit.duke.edu:3128`），否则依赖下载会 403。若换了网络环境，
-> 可删除该文件里的 `systemProp.*proxy*` 配置。
+```bash
+cd frontend-node
+node server.js
+```
+
+浏览器访问 http://localhost:3000
+
+## 局域网部署（手机等设备访问）
+
+Node 服务默认监听 `0.0.0.0`，启动时会打印局域网地址：
+
+```
+前端服务已启动: http://localhost:3000
+局域网访问: http://192.168.31.191:3000
+```
+
+手机连**同一个 WiFi**，浏览器打开上面打印的局域网地址即可。
+架构上手机访问的是 Node(3000)，Node 再转发给本机 Spring Boot(8080)，后端无需额外配置。
+
+## 压测
+
+```bash
+cd frontend-node
+node load-test.js 500 100   # 500 次登录，每批 100 并发
+```
+
+> 真实场景「500 人同时登录」是分批到达的，一次性打满 500 个 socket 会触发
+> 操作系统 TCP backlog 限制（ECONNRESET），属正常现象。脚本用「受控爬坡」模拟真实负载。
 
 ## 代码结构（按分层职责）
 
 ```
 com.smarthome
-├── SmartHomeApplication  启动入口：Spring 从这里开始扫描组件
-├── model/User            用户实体（对应数据库 users 表）
-│   └── Gender            性别枚举（男/女/保密）
-├── dto/                  表单 DTO 层：承接网页表单 + 校验注解
-│   ├── ProfileForm       个人资料表单
-│   └── RegisterForm      注册表单
-├── repository/           数据访问层
-│   ├── UserRepository    接口，方法由 Spring Data JPA 动态生成实现
-│   └── SystemStatusRepository
-├── service/              业务逻辑层
-│   ├── AuthService       登录/登出/会话缓存
-│   ├── UserService       注册/查看/修改资料
-│   └── SystemStatusService
-├── controller/           Web 层
-│   ├── AuthController    登录/登出页面
-│   ├── ProfileController 个人资料页
-│   └── PingController
+├── SmartHomeApplication   启动入口
+├── model/                 实体层
+│   ├── User              用户（含 role 角色字段）
+│   ├── Device            设备（含设备类型/状态枚举）
+│   ├── Gender            性别枚举
+│   └── Role              角色枚举（USER/ADMIN）
+├── dto/                   表单 DTO + 校验注解
+├── repository/            数据访问层（接口，Spring Data JPA 动态实现）
+│   ├── UserRepository
+│   └── DeviceRepository
+├── service/               业务逻辑层
+│   ├── AuthService        登录/登出/防暴力破解/会话缓存
+│   ├── UserService        注册/改资料/姓名查重
+│   ├── DeviceService      设备增删改查 + 归属校验
+│   └── FileStorageService 头像存储
+├── controller/            Web 层
+│   ├── ApiController      JSON API（登录/注册/资料/管理员）
+│   └── DeviceController   JSON API（设备）
+├── exception/             自定义异常
+│   └── LoginLockedException
 └── config/
-    ├── AppConfig         用 @Bean 手工声明 PasswordEncoder
-    └── DataInitializer   启动时造演示账号
+    ├── AppConfig          @Bean 声明 PasswordEncoder
+    ├── DataInitializer    启动初始化演示账号/设备
+    ├── WebConfig          静态资源映射
+    └── GlobalExceptionHandler 全局异常（返回 JSON）
 ```
 
-## 核心：Spring 的 IoC / DI 是怎么实现的（对应你的理解）
+## 核心：Spring 的 IoC / DI 怎么运作
 
-### 1. 容器从哪里看到"一整份类加载对象名单"？
+### 1. 容器怎么知道有哪些类？
 
-答案是**组件扫描（Component Scan）**。`SmartHomeApplication` 上的
-`@SpringBootApplication` 内部包含 `@ComponentScan`。应用启动时：
+**组件扫描（Component Scan）**。`@SpringBootApplication` 含 `@ComponentScan`，启动时从 `com.smarthome` 包向下扫描所有类，用类加载器加载 `.class`，检查 `@Component/@Service/@Repository/@Controller` 注解，登记进"候选名单"。
 
-1. 从启动类所在的包 `com.smarthome` 开始，向下递归扫描所有类；
-2. 用类加载器加载每个 `.class`，检查类上是否有 `@Component` /
-   `@Service` / `@Repository` / `@Controller` 等注解；
-3. 有注解的类被登记进一份"候选名单"（这些就是将来要管理的 bean）。
+### 2. "一层一层，先从没依赖的开始" —— 依赖解析
 
-所以"名单"不是凭空有的，而是**启动时靠注解扫描 + 类加载器**实时收集出来的。
-这正是你理解的"classloader 把注解挂在类加载对象上"的前半段来源。
+创建 bean 时若构造方法需要别的 bean，容器会**先递归创建被依赖者**。以本项目为例：
 
-### 2. "一层一层，先从没有依赖的开始存" —— 依赖解析
-
-扫描拿到名单后，容器要逐个创建 bean。你的直觉是对的，真实机制是：
-
-- 创建某个 bean 时，如果它的**构造方法需要别的 bean**（依赖），
-  容器会**先递归去创建那个被依赖的 bean**；
-- 于是形成一条"依赖链"：被依赖的（没有依赖的）先创建，依赖它的后创建。
-
-以本项目为例，创建 `AuthController` 时：
-
-```text
-AuthController 需要 AuthService
+```
+ApiController 需要 AuthService + UserService + FileStorageService
   -> AuthService 需要 UserRepository + PasswordEncoder
        -> UserRepository：接口，由 Spring Data JPA 生成代理
-       -> PasswordEncoder：由 AppConfig 的 @Bean 方法 new 出来
+       -> PasswordEncoder：AppConfig 的 @Bean 方法 new 出来
 ```
 
-所以最终创建顺序是：`PasswordEncoder` → `UserRepository` → `AuthService` → `AuthController`。
-**没有依赖的先被创建，这正是你说的"分层存储"。**
+**没有依赖的先创建**，这正是"分层存储"。
 
-### 3. 两种 DI 方式，本项目都用了
+### 3. 两种 DI 方式
 
-- **注解方式**：`@Service` / `@Repository` / `@Controller` 标注的类，
-  靠扫描发现，靠**构造方法参数**注入依赖（这是最推荐、最直观的方式）。
-- **配置方式**：`PasswordEncoder` 来自第三方库，自己没贴注解，于是在
-  `AppConfig` 里用 `@Configuration` + `@Bean` 方法手工声明，交给容器管理。
+- **注解**：`@Service/@Repository/@Controller` 靠扫描发现，靠构造方法参数注入
+- **配置**：`PasswordEncoder` 来自第三方库，在 `AppConfig` 用 `@Bean` 手工声明
 
-### 4. 一个关键点：接口怎么有实现？（动态代理）
+### 4. 接口怎么有实现？（动态代理）
 
-`UserRepository` 只是一个接口，一行实现代码都没写。运行时能调用
-`save` / `findByUsername`，是因为 **Spring Data JPA 在启动时用动态代理
-生成了这个接口的实现对象**，并注册进容器。这是 IoC 之上的一层"魔法"，
-但它仍然是"扫描 → 生成 → 注入"这条主线的一部分。
+`UserRepository`/`DeviceRepository` 只是接口，运行时能调用是因为 **Spring Data JPA 用动态代理生成了实现**并注册进容器。
 
-### 5. 登录状态怎么"保持"？
+### 5. 登录状态怎么保持？
 
-真实的 Web 是无状态的（HTTP 请求之间没有记忆）。本项目用最朴素的方式模拟：
+1. 登录成功 → 生成 token 存内存 Map（token → username）
+2. 前端把 token 存 localStorage
+3. 之后每次请求带 token，后端反查得到当前用户
 
-1. 登录成功 → 生成一个随机 `token`，放进内存 Map（token → username）；
-2. 把 token 写进浏览器的 Cookie；
-3. 之后每次请求，浏览器自动带上 Cookie，后端从 Cookie 取出 token，
-   反查 Map 得到当前用户。
+真实项目会外置到 Redis/Session，但核心思路一样。
 
-真实项目会把这份状态放到 Redis / Spring Session 里（可跨进程、可过期），
-但**核心思路完全一样**。这是下一步可以优化的方向。
+## 下一步可优化方向
 
-## 下一步可优化方向（由简到难）
-
-1. 会话过期：给 token 加有效期，到期自动失效
-2. 密码修改：个人页增加"修改密码"功能
-3. 用 MySQL 替换 H2（改依赖 + 配置即可，代码几乎不用动）
-4. 引入 Spring Security 处理更完整的认证 / 授权
-5. 会话状态外置到 Redis
-
-## 测试
-
-```bash
-gradle test
-```
+1. 会话过期：token 加有效期
+2. 密码修改功能
+3. 引入 Spring Security 做完整认证/授权
+4. 会话外置 Redis
+5. 设备电量/运行状态详情、场景联动
+6. HTTPS + 域名部署

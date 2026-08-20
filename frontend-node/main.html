@@ -24,6 +24,21 @@
         }
         a { cursor: pointer; }
 
+        /* 页面切换丝滑过渡：淡入 + 轻微上移 */
+        .fade-in { animation: fadeIn .35s ease; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-overlay { animation: fadeIn .2s ease; }
+        .modal { animation: popIn .25s cubic-bezier(.22,.9,.34,1.2); }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(.92); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .card { transition: border-color .25s; }
+        .card:hover { border-color: #2f4360; }
+
         /* ===== 宣传首页 ===== */
         .landing { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
         .navbar {
@@ -145,7 +160,23 @@
         .info-item:last-child { border-bottom: none; }
         .info-label { color: var(--text-dim); font-size: 14px; }
         .info-value { font-size: 15px; text-align: right; }
-        .avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--panel-2); display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto 14px; }
+        .avatar-wrap {
+            position: relative; width: 80px; height: 80px; margin: 0 auto 20px; cursor: pointer;
+        }
+        .avatar {
+            width: 80px; height: 80px; border-radius: 50%; background: var(--panel-2);
+            display: flex; align-items: center; justify-content: center; font-size: 34px;
+            overflow: hidden; border: 2px solid var(--border); transition: border .25s, box-shadow .25s;
+        }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .avatar-wrap:hover .avatar { border-color: var(--accent); box-shadow: 0 0 16px rgba(59,130,246,.35); }
+        .avatar-edit-hint {
+            position: absolute; right: 0; bottom: 0; width: 26px; height: 26px;
+            background: var(--accent); border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 13px; border: 2px solid var(--bg);
+            transition: transform .2s;
+        }
+        .avatar-wrap:hover .avatar-edit-hint { transform: scale(1.1); }
 
         .device-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
         .device-card {
@@ -311,7 +342,11 @@
 
             <!-- 个人资料页 -->
             <div id="tab-profile" class="card" style="display:none;">
-                <div class="avatar" id="avatarIcon">👤</div>
+                <div class="avatar-wrap" id="avatarWrap" title="点击更换头像">
+                    <div class="avatar" id="avatarIcon">👤</div>
+                    <div class="avatar-edit-hint">📷</div>
+                    <input type="file" id="avatarInput" accept="image/*" style="display:none;">
+                </div>
                 <div id="profileView">
                     <div class="info-item"><span class="info-label">用户ID</span><span class="info-value" id="showId"></span></div>
                     <div class="info-item"><span class="info-label">用户名</span><span class="info-value" id="showUsername"></span></div>
@@ -549,7 +584,52 @@
             document.getElementById('showEmail').textContent = u.email || '';
             document.getElementById('showBio').textContent = u.bio || '';
             if (u.birthday) document.getElementById('birthDate').value = u.birthday;
+            renderAvatar(u.avatarUrl);
         }
+
+        // 渲染头像：有图显示图，无图显示默认 emoji
+        function renderAvatar(avatarUrl) {
+            const icon = document.getElementById('avatarIcon');
+            if (avatarUrl) {
+                icon.innerHTML = `<img src="${avatarUrl}?t=${Date.now()}" alt="avatar">`;
+            } else {
+                icon.innerHTML = '👤';
+            }
+        }
+
+        // ===== 头像上传 =====
+        const avatarWrap = document.getElementById('avatarWrap');
+        const avatarInput = document.getElementById('avatarInput');
+        avatarWrap.onclick = () => avatarInput.click();
+        avatarInput.onchange = async () => {
+            const file = avatarInput.files[0];
+            if (!file) return;
+            // 前端先做即时预览（不等待上传成功，丝滑反馈）
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('avatarIcon').innerHTML = `<img src="${e.target.result}" alt="preview">`;
+            };
+            reader.readAsDataURL(file);
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('token', currentToken);
+            try {
+                const res = await fetch('/api/user/avatar', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (!data.success) {
+                    alert(data.message);
+                    await loadUserInfo(); // 失败则还原
+                    return;
+                }
+                renderAvatar(data.data.avatarUrl);
+            } catch (e) {
+                alert('上传失败，请重试');
+                await loadUserInfo();
+            } finally {
+                avatarInput.value = ''; // 允许重复选同一张图
+            }
+        };
         function calcAge(birthday) {
             const b = new Date(birthday), n = new Date();
             let age = n.getFullYear() - b.getFullYear();

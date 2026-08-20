@@ -3,7 +3,6 @@ package com.smarthome.service;
 import java.util.List;
 
 import com.smarthome.model.Device;
-import com.smarthome.model.User;
 import com.smarthome.repository.DeviceRepository;
 
 import org.springframework.stereotype.Service;

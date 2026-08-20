@@ -15,6 +15,7 @@ import com.smarthome.model.Gender;
 import com.smarthome.model.Role;
 import com.smarthome.model.User;
 import com.smarthome.service.AuthService;
+import com.smarthome.service.FileStorageService;
 import com.smarthome.service.UserService;
 
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * JSON API —— 给 Node.js 前端调用的“跨语言”接口。
@@ -43,15 +45,18 @@ public class ApiController {
 
     private final AuthService authService;
     private final UserService userService;
+    private final FileStorageService fileStorageService;
 
     /** 与 RegisterForm 保持一致的校验规则。 */
     private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_]{4,20}$");
     private static final Pattern PHONE_PATTERN = Pattern.compile("^1[3-9]\\d{9}$");
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
 
-    public ApiController(AuthService authService, UserService userService) {
+    public ApiController(AuthService authService, UserService userService,
+                         FileStorageService fileStorageService) {
         this.authService = authService;
         this.userService = userService;
+        this.fileStorageService = fileStorageService;
     }
 
     // ---------- 登录 ----------
@@ -242,6 +247,34 @@ public class ApiController {
         return name.substring(0, 1) + "*".repeat(name.length() - 1);
     }
 
+    // ---------- 头像上传 ----------
+
+    /**
+     * POST /api/user/avatar  multipart/form-data: {file, token}
+     * 上传头像：校验图片类型和大小 -> 落盘 -> 记录文件名 -> 返回头像 URL。
+     */
+    @PostMapping("/user/avatar")
+    public ResponseEntity<Map<String, Object>> uploadAvatar(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("token") String token) {
+        Optional<User> current = authService.currentUser(token);
+        if (current.isEmpty()) {
+            return ok(false, "未登录或登录已过期", null);
+        }
+        User user = current.get();
+        try {
+            String filename = fileStorageService.saveAvatar(user.getId(), file);
+            // 换头像：先删旧文件，再更新记录
+            fileStorageService.deleteAvatar(user.getAvatarPath());
+            userService.updateAvatar(user.getId(), filename);
+            Map<String, Object> data = new LinkedHashMap<>();
+            data.put("avatarUrl", "/avatars/" + filename);
+            return ok(true, "头像上传成功", data);
+        } catch (IllegalArgumentException e) {
+            return ok(false, e.getMessage(), null);
+        }
+    }
+
     // ---------- 工具方法 ----------
 
     /** 把 User 实体转成给前端的安全数据（绝不含 passwordHash）。 */
@@ -258,6 +291,8 @@ public class ApiController {
         data.put("email", user.getEmail());
         data.put("bio", user.getBio());
         data.put("role", user.getRole() == null ? "USER" : user.getRole().name());
+        // 头像 URL：null 表示还没上传，前端显示默认占位
+        data.put("avatarUrl", user.getAvatarPath() == null ? null : "/avatars/" + user.getAvatarPath());
         return data;
     }
 
